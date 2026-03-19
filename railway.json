@@ -1,0 +1,11 @@
+﻿{
+  "build": {
+    "builder": "NIXPACKS",
+    "buildCommand": "cd frontend && npm install && npm run build",
+    "watchPatterns": ["frontend/**"]
+  },
+  "deploy": {
+    "startCommand": "cd frontend && npm run preview -- --port  --host",
+    "restartPolicyType": "ON_FAILURE"
+  }
+}
