@@ -1,0 +1,1 @@
+﻿[build]`ndockerfilePath = "backend/Dockerfile`n`n[deploy]`nstartCommand = uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 2`nhealthcheckPath = /health`nhealthcheckTimeout = 30`nrestartPolicyType = on_failure`nrestartPolicyMaxRetries = 3
