@@ -1,4 +1,4 @@
-﻿from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from jose import JWTError, jwt
@@ -29,10 +29,11 @@ class RegisterRequest(BaseModel):
     tenant_id: str
 
 def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
+    # bcrypt tiene limite de 72 bytes
+    return pwd_context.hash(password[:72])
 
 def verify_password(plain: str, hashed: str) -> bool:
-    return pwd_context.verify(plain, hashed)
+    return pwd_context.verify(plain[:72], hashed)
 
 def create_token(data: dict) -> str:
     to_encode = data.copy()
