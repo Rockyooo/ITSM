@@ -161,3 +161,34 @@ def close_ticket(
     ticket.status = "closed"
     ticket.updated_at = datetime.utcnow()
     db.commit()
+
+class TicketAssign(BaseModel):
+    assigned_to: str
+
+@router.patch("/{ticket_id}/assign", response_model=TicketResponse)
+def assign_ticket(
+    ticket_id: str,
+    req: TicketAssign,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if current_user.role not in ["admin", "supervisor"]:
+        raise HTTPException(403, "Sin permisos para asignar tickets")
+    ticket = db.query(Ticket).filter(
+        Ticket.id == ticket_id,
+        Ticket.tenant_id == current_user.tenant_id
+    ).first()
+    if not ticket:
+        raise HTTPException(404, "Ticket no encontrado")
+    tecnico = db.query(User).filter(
+        User.id == req.assigned_to,
+        User.tenant_id == current_user.tenant_id
+    ).first()
+    if not tecnico:
+        raise HTTPException(404, "Tecnico no encontrado")
+    ticket.assigned_to = req.assigned_to
+    ticket.status = "in_progress"
+    ticket.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(ticket)
+    return ticket
