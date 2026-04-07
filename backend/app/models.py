@@ -55,6 +55,19 @@ class TicketMessage(Base):
     is_internal   = Column(Boolean, default=False)
     created_at    = Column(DateTime, default=now)
 
+class Attachment(Base):
+    __tablename__ = "attachments"
+    id           = Column(String, primary_key=True, default=uid)
+    message_id   = Column(String, ForeignKey("ticket_messages.id"), nullable=False)
+    ticket_id    = Column(String, ForeignKey("tickets.id"), nullable=False)
+    tenant_id    = Column(String, ForeignKey("tenants.id"), nullable=False)
+    filename     = Column(String(300), nullable=False)   # nombre original
+    stored_name  = Column(String(300), nullable=False)   # nombre en storage
+    file_url     = Column(String(500), nullable=False)
+    content_type = Column(String(100))
+    file_size    = Column(Integer)
+    created_at   = Column(DateTime, default=now)
+
 class Asset(Base):
     __tablename__ = "assets"
     id            = Column(String, primary_key=True, default=uid)
