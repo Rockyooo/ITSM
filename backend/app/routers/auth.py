@@ -87,3 +87,5 @@ def me(current_user: User = Depends(get_current_user)):
         "tenant_id": current_user.tenant_id,
     }
 
+
+# rebuild
