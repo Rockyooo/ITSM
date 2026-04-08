@@ -29,7 +29,7 @@ export default function AssignTechnicianModal({
   useEffect(() => {
     if (!isOpen) return;
     setLoading(true);
-    api.get("/users/technicians")
+    api.get("/api/v1/users/technicians")
       .then((res) => { setTechnicians(res.data); setError(null); })
       .catch(() => setError("No se pudo cargar la lista de técnicos"))
       .finally(() => setLoading(false));
@@ -39,7 +39,7 @@ export default function AssignTechnicianModal({
     if (!selectedId) return;
     setSaving(true);
     try {
-      await api.patch(`/tickets/${ticketId}/assign`, { assignee_id: selectedId });
+      await api.patch(`/api/v1/tickets/${ticketId}/assign`, { assignee_id: selectedId });
       const tech = technicians.find((t) => t.id === selectedId);
       onAssigned(selectedId, tech?.full_name ?? "");
       onClose();
@@ -103,3 +103,4 @@ export default function AssignTechnicianModal({
     </div>
   );
 }
+
