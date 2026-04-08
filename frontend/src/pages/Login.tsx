@@ -86,29 +86,33 @@ export default function Login() {
       <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", padding:"24px" }}>
         <div style={{ width:"100%", maxWidth:"400px" }}>
 
-          {/* Logo y nombre */}
+          {/* Logo — solo imagen, sin nombre debajo cuando carga */}
           <div style={{ textAlign:"center", marginBottom:"32px" }}>
-            <div style={{ display:"inline-flex", alignItems:"center", justifyContent:"center",
-              width:"64px", height:"64px", borderRadius:"16px",
-              background: logoError ? BRANDING.primaryColor : "transparent",
-              marginBottom:"12px", overflow:"hidden" }}>
-              {!logoError ? (
+            {!logoError ? (
+              <>
                 <img
                   src={BRANDING.logoUrl}
                   alt={BRANDING.appName}
                   onError={() => setLogoError(true)}
-                  style={{ width:"64px", height:"64px", objectFit:"contain" }}
+                  style={{ height:"72px", maxWidth:"220px", objectFit:"contain", marginBottom:"8px" }}
                 />
-              ) : (
-                <span style={{ fontSize:"13px", fontWeight:"800", color:"#fff", textAlign:"center", padding:"0 6px", lineHeight:"1.2" }}>
+                <div style={{ fontSize:"13px", color:"#64748B" }}>{BRANDING.appSubtitle}</div>
+              </>
+            ) : (
+              <>
+                <div style={{ display:"inline-flex", alignItems:"center", justifyContent:"center",
+                  width:"64px", height:"64px", borderRadius:"16px",
+                  background: BRANDING.primaryColor, marginBottom:"10px" }}>
+                  <span style={{ fontSize:"28px", fontWeight:"800", color:"#fff" }}>
+                    {BRANDING.logoFallback}
+                  </span>
+                </div>
+                <div style={{ fontSize:"22px", fontWeight:"700", color:"#F1F5F9", marginBottom:"4px" }}>
                   {BRANDING.appName}
-                </span>
-              )}
-            </div>
-            <div style={{ fontSize:"22px", fontWeight:"700", color:"#F1F5F9", marginBottom:"4px" }}>
-              {BRANDING.appName}
-            </div>
-            <div style={{ fontSize:"13px", color:"#64748B" }}>{BRANDING.appSubtitle}</div>
+                </div>
+                <div style={{ fontSize:"13px", color:"#64748B" }}>{BRANDING.appSubtitle}</div>
+              </>
+            )}
           </div>
 
           {/* Card formulario */}
@@ -198,5 +202,6 @@ export default function Login() {
     </div>
   );
 }
+
 
 
