@@ -45,14 +45,29 @@ export default function Dashboard() {
   const [form, setForm] = useState({ title: "", description: "", priority: "medium", ticket_type: "incident", category: "" });
   const navigate = useNavigate();
   const location = useLocation();
+  const [tenants, setTenants] = useState<any[]>([]);
+  const [activeTenant, setActiveTenant] = useState<string>("");
   const [assignModal, setAssignModal] = useState<{ open: boolean; ticketId: number | null; ticketNumber: string; currentAssigneeId: number | null }>
     ({ open: false, ticketId: null, ticketNumber: "", currentAssigneeId: null });
 
-  useEffect(() => { fetchMe(); loadTickets(); }, []);
+  useEffect(() => { fetchMe(); cargarTenants(); }, []);
+  useEffect(() => { if (activeTenant !== undefined) loadTickets(); }, [activeTenant]);
+
+  const cargarTenants = async () => {
+    try {
+      const { data } = await api.get("/api/v1/permissions/my-tenants");
+      setTenants(data);
+      if (data.length > 0 && !activeTenant) setActiveTenant(data[0].tenant_id);
+    } catch {}
+  };
 
   const loadTickets = async () => {
-    try { const { data } = await api.get("/api/v1/tickets"); setTickets(data); }
-    finally { setLoading(false); }
+    setLoading(true);
+    try {
+      const url = activeTenant ? `/api/v1/tickets?tenant_id=${activeTenant}` : "/api/v1/tickets";
+      const { data } = await api.get(url);
+      setTickets(data);
+    } finally { setLoading(false); }
   };
 
   const loadMessages = async (ticketId: string) => {
@@ -105,13 +120,29 @@ export default function Dashboard() {
       {/* SIDEBAR */}
       <aside style={{ width: "220px", background: "#fff", borderRight: "1px solid #E5E7EB", display: "flex", flexDirection: "column", flexShrink: 0 }}>
         <div style={{ padding: "20px 16px 16px", borderBottom: "1px solid #E5E7EB" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: tenants.length > 1 ? "12px" : "0" }}>
             <div style={{ width: "32px", height: "32px", background: "#1D6AE5", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: "700", fontSize: "14px" }}>F</div>
             <div>
               <div style={{ fontWeight: "700", fontSize: "13px", color: "#111827" }}>Fusion I.T.</div>
               <div style={{ fontSize: "11px", color: "#6B7280" }}>Mesa de ayuda</div>
             </div>
           </div>
+          {tenants.length > 1 && (
+            <div>
+              <div style={{ fontSize: "10px", color: "#9CA3AF", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "4px" }}>Empresa</div>
+              <select value={activeTenant} onChange={e => setActiveTenant(e.target.value)}
+                style={{ width: "100%", padding: "7px 10px", borderRadius: "8px", border: "1px solid #E5E7EB", fontSize: "12px", color: "#111827", background: "#F9FAFB", outline: "none", cursor: "pointer" }}>
+                {tenants.map((t: any) => (
+                  <option key={t.tenant_id} value={t.tenant_id}>{t.tenant_name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+          {tenants.length === 1 && (
+            <div style={{ fontSize: "11px", color: "#6B7280", marginTop: "4px" }}>
+              {tenants[0]?.tenant_name}
+            </div>
+          )}
         </div>
         <nav style={{ padding: "12px 8px", flex: 1 }}>
           {[
@@ -406,6 +437,8 @@ export default function Dashboard() {
     </div>
   );
 }
+
+
 
 
 
