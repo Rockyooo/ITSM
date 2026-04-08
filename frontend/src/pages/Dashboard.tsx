@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../lib/api";
 import { useAuthStore } from "../store/auth";
+import AssignTechnicianModal from "./AssignTechnicianModal";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
   open:        { label: "Abierto",      color: "#1D6AE5", bg: "#EEF4FF" },
@@ -14,7 +15,7 @@ const PRIORITY_CONFIG: Record<string, { label: string; color: string; dot: strin
   low:      { label: "Baja",     color: "#6B7280", dot: "#9CA3AF" },
   medium:   { label: "Media",    color: "#D97706", dot: "#F59E0B" },
   high:     { label: "Alta",     color: "#DC2626", dot: "#EF4444" },
-  critical: { label: "Cr√≠tica",  color: "#7C3AED", dot: "#8B5CF6" },
+  critical: { label: "CrÌtica",  color: "#7C3AED", dot: "#8B5CF6" },
 };
 
 const TYPE_LABELS: Record<string, string> = {
@@ -41,6 +42,8 @@ export default function Dashboard() {
   const [showForm, setShowForm] = useState(false);
   const [filterStatus, setFilterStatus] = useState("all");
   const [form, setForm] = useState({ title: "", description: "", priority: "medium", ticket_type: "incident", category: "" });
+  const [assignModal, setAssignModal] = useState<{ open: boolean; ticketId: number | null; ticketNumber: string; currentAssigneeId: number | null }>
+    ({ open: false, ticketId: null, ticketNumber: "", currentAssigneeId: null });
 
   useEffect(() => { fetchMe(); loadTickets(); }, []);
 
@@ -78,12 +81,25 @@ export default function Dashboard() {
     if (selected?.id === ticketId) setSelected((prev: any) => ({ ...prev, status }));
   };
 
+  const openAssignModal = (ticketId: number, ticketNumber: string, currentAssigneeId?: number | null) => {
+    setAssignModal({ open: true, ticketId, ticketNumber, currentAssigneeId: currentAssigneeId ?? null });
+  };
+
+  const handleAssigned = (technicianId: number, technicianName: string) => {
+    setTickets(prev => prev.map(t =>
+      t.id === assignModal.ticketId ? { ...t, assignee_id: technicianId, assignee_name: technicianName } : t
+    ));
+    if (selected?.id === assignModal.ticketId)
+      setSelected((prev: any) => ({ ...prev, assignee_id: technicianId, assignee_name: technicianName }));
+    setAssignModal({ open: false, ticketId: null, ticketNumber: "", currentAssigneeId: null });
+  };
+
   const filtered = filterStatus === "all" ? tickets : tickets.filter(t => t.status === filterStatus);
 
   return (
     <div style={{ display: "flex", height: "100vh", fontFamily: "'DM Sans', -apple-system, sans-serif", background: "#F8F9FC", color: "#111827" }}>
 
-      {/* ‚îÄ‚îÄ SIDEBAR ‚îÄ‚îÄ */}
+      {/* SIDEBAR */}
       <aside style={{ width: "220px", background: "#fff", borderRight: "1px solid #E5E7EB", display: "flex", flexDirection: "column", flexShrink: 0 }}>
         <div style={{ padding: "20px 16px 16px", borderBottom: "1px solid #E5E7EB" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
@@ -96,12 +112,12 @@ export default function Dashboard() {
         </div>
         <nav style={{ padding: "12px 8px", flex: 1 }}>
           {[
-            { icon: "‚ñ¶", label: "Dashboard", active: true },
-            { icon: "üé´", label: "Tickets" },
-            { icon: "üñ•", label: "Inventario" },
-            { icon: "üë•", label: "Usuarios" },
-            { icon: "üìö", label: "Base de conocimiento" },
-            { icon: "üìä", label: "Reportes" },
+            { icon: "?", label: "Dashboard", active: true },
+            { icon: "??", label: "Tickets" },
+            { icon: "??", label: "Inventario" },
+            { icon: "??", label: "Usuarios" },
+            { icon: "??", label: "Base de conocimiento" },
+            { icon: "??", label: "Reportes" },
           ].map(item => (
             <div key={item.label} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "8px 10px", borderRadius: "8px", marginBottom: "2px", background: item.active ? "#EEF4FF" : "transparent", color: item.active ? "#1D6AE5" : "#6B7280", fontSize: "13px", fontWeight: item.active ? "600" : "400", cursor: "pointer" }}>
               <span style={{ fontSize: "14px" }}>{item.icon}</span>
@@ -118,12 +134,12 @@ export default function Dashboard() {
               <div style={{ fontSize: "12px", fontWeight: "600", color: "#111827", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{user?.full_name}</div>
               <div style={{ fontSize: "11px", color: "#9CA3AF" }}>{user?.role}</div>
             </div>
-            <button onClick={logout} style={{ background: "none", border: "none", color: "#9CA3AF", cursor: "pointer", fontSize: "16px" }} title="Salir">‚èª</button>
+            <button onClick={logout} style={{ background: "none", border: "none", color: "#9CA3AF", cursor: "pointer", fontSize: "16px" }} title="Salir">?</button>
           </div>
         </div>
       </aside>
 
-      {/* ‚îÄ‚îÄ MAIN ‚îÄ‚îÄ */}
+      {/* MAIN */}
       <main style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
 
         {/* Topbar */}
@@ -178,8 +194,8 @@ export default function Dashboard() {
                 <div style={{ textAlign: "center", padding: "40px", color: "#9CA3AF" }}>Cargando...</div>
               ) : filtered.length === 0 ? (
                 <div style={{ textAlign: "center", padding: "40px" }}>
-                  <div style={{ fontSize: "32px", marginBottom: "8px" }}>üéâ</div>
-                  <p style={{ color: "#6B7280", fontSize: "14px" }}>No hay tickets aqu√≠</p>
+                  <div style={{ fontSize: "32px", marginBottom: "8px" }}>??</div>
+                  <p style={{ color: "#6B7280", fontSize: "14px" }}>No hay tickets aquÌ</p>
                 </div>
               ) : filtered.map(t => (
                 <div key={t.id} onClick={() => selectTicket(t)}
@@ -194,14 +210,26 @@ export default function Dashboard() {
                     </span>
                   </div>
                   <p style={{ margin: "0 0 6px", fontSize: "13px", fontWeight: "600", color: "#111827", lineHeight: "1.4" }}>{t.title}</p>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
                     <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "11px", color: PRIORITY_CONFIG[t.priority]?.color }}>
                       <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: PRIORITY_CONFIG[t.priority]?.dot, display: "inline-block" }}></span>
                       {PRIORITY_CONFIG[t.priority]?.label}
                     </span>
-                    <span style={{ color: "#E5E7EB" }}>¬∑</span>
+                    <span style={{ color: "#E5E7EB" }}>∑</span>
                     <span style={{ fontSize: "11px", color: "#9CA3AF" }}>{TYPE_LABELS[t.ticket_type]}</span>
-                    {t.category && <><span style={{ color: "#E5E7EB" }}>¬∑</span><span style={{ fontSize: "11px", color: "#9CA3AF" }}>{t.category}</span></>}
+                    {t.category && <><span style={{ color: "#E5E7EB" }}>∑</span><span style={{ fontSize: "11px", color: "#9CA3AF" }}>{t.category}</span></>}
+                    <span style={{ color: "#E5E7EB" }}>∑</span>
+                    {t.assignee_name ? (
+                      <span style={{ display:"inline-flex", alignItems:"center", gap:"4px", fontSize:"11px", color:"#059669" }}>
+                        <span style={{ width:"6px", height:"6px", borderRadius:"50%", background:"#059669", display:"inline-block" }}></span>
+                        {t.assignee_name}
+                      </span>
+                    ) : (
+                      <button onClick={e => { e.stopPropagation(); openAssignModal(t.id, t.ticket_number, null); }}
+                        style={{ fontSize:"11px", color:"#1D6AE5", background:"none", border:"1px solid #BFDBFE", borderRadius:"20px", padding:"1px 8px", cursor:"pointer" }}>
+                        + Asignar
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}
@@ -215,7 +243,7 @@ export default function Dashboard() {
               {/* Detail header */}
               <div style={{ padding: "16px 24px", borderBottom: "1px solid #E5E7EB", background: "#fff", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                 <div style={{ flex: 1 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px", flexWrap: "wrap" }}>
                     <span style={{ fontSize: "12px", color: "#9CA3AF", fontFamily: "monospace" }}>{selected.ticket_number}</span>
                     <span style={{ fontSize: "12px", padding: "2px 10px", borderRadius: "20px", fontWeight: "500",
                       background: STATUS_CONFIG[selected.status]?.bg, color: STATUS_CONFIG[selected.status]?.color }}>
@@ -225,11 +253,23 @@ export default function Dashboard() {
                       <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: PRIORITY_CONFIG[selected.priority]?.dot, display: "inline-block" }}></span>
                       {PRIORITY_CONFIG[selected.priority]?.label}
                     </span>
+                    {/* AsignaciÛn en header del detalle */}
+                    {selected.assignee_name ? (
+                      <button onClick={() => openAssignModal(selected.id, selected.ticket_number, selected.assignee_id)}
+                        style={{ display:"inline-flex", alignItems:"center", gap:"4px", fontSize:"11px", color:"#059669", background:"#ECFDF5", border:"1px solid #A7F3D0", borderRadius:"20px", padding:"2px 10px", cursor:"pointer" }}>
+                        ?? {selected.assignee_name} ∑ cambiar
+                      </button>
+                    ) : (
+                      <button onClick={() => openAssignModal(selected.id, selected.ticket_number, null)}
+                        style={{ fontSize:"11px", color:"#1D6AE5", background:"#EEF4FF", border:"1px solid #BFDBFE", borderRadius:"20px", padding:"2px 10px", cursor:"pointer" }}>
+                        + Asignar tÈcnico
+                      </button>
+                    )}
                   </div>
                   <h2 style={{ margin: 0, fontSize: "16px", fontWeight: "700", color: "#111827" }}>{selected.title}</h2>
                   {selected.description && <p style={{ margin: "6px 0 0", fontSize: "13px", color: "#6B7280" }}>{selected.description}</p>}
                 </div>
-                <button onClick={() => setSelected(null)} style={{ background: "none", border: "none", color: "#9CA3AF", cursor: "pointer", fontSize: "20px", lineHeight: 1, padding: "0 0 0 16px" }}>√ó</button>
+                <button onClick={() => setSelected(null)} style={{ background: "none", border: "none", color: "#9CA3AF", cursor: "pointer", fontSize: "20px", lineHeight: 1, padding: "0 0 0 16px" }}>◊</button>
               </div>
 
               {/* Status actions */}
@@ -250,17 +290,17 @@ export default function Dashboard() {
               <div style={{ flex: 1, overflowY: "auto", padding: "16px 24px", display: "flex", flexDirection: "column", gap: "12px" }}>
                 {messages.length === 0 ? (
                   <div style={{ textAlign: "center", padding: "40px", color: "#9CA3AF", fontSize: "13px" }}>
-                    Sin mensajes a√∫n. Escribe el primero.
+                    Sin mensajes a˙n. Escribe el primero.
                   </div>
                 ) : messages.map(m => (
                   <div key={m.id} style={{ display: "flex", gap: "10px", alignItems: "flex-start" }}>
                     <div style={{ width: "30px", height: "30px", borderRadius: "50%", background: m.is_internal ? "#F3F4F6" : "#EEF4FF", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: "700", color: m.is_internal ? "#6B7280" : "#1D6AE5", flexShrink: 0 }}>
-                      {m.is_internal ? "üîí" : "T"}
+                      {m.is_internal ? "??" : "T"}
                     </div>
                     <div style={{ flex: 1 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
                         <span style={{ fontSize: "12px", fontWeight: "600", color: "#111827" }}>
-                          {m.is_internal ? "Nota interna" : "T√©cnico"}
+                          {m.is_internal ? "Nota interna" : "TÈcnico"}
                         </span>
                         {m.is_internal && <span style={{ fontSize: "11px", padding: "1px 6px", background: "#F3F4F6", color: "#6B7280", borderRadius: "4px" }}>Interno</span>}
                         <span style={{ fontSize: "11px", color: "#9CA3AF" }}>{new Date(m.created_at).toLocaleString()}</span>
@@ -296,19 +336,19 @@ export default function Dashboard() {
         </div>
       </main>
 
-      {/* ‚îÄ‚îÄ MODAL NUEVO TICKET ‚îÄ‚îÄ */}
+      {/* MODAL NUEVO TICKET */}
       {showForm && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50 }}>
           <div style={{ background: "#fff", borderRadius: "16px", padding: "24px", width: "520px", maxWidth: "90vw", boxShadow: "0 20px 60px rgba(0,0,0,0.15)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
               <h2 style={{ margin: 0, fontSize: "16px", fontWeight: "700" }}>Nuevo ticket</h2>
-              <button onClick={() => setShowForm(false)} style={{ background: "none", border: "none", color: "#9CA3AF", cursor: "pointer", fontSize: "20px" }}>√ó</button>
+              <button onClick={() => setShowForm(false)} style={{ background: "none", border: "none", color: "#9CA3AF", cursor: "pointer", fontSize: "20px" }}>◊</button>
             </div>
             <form onSubmit={createTicket}>
               <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                <input placeholder="T√≠tulo del ticket *" required value={form.title} onChange={e => setForm({...form, title: e.target.value})}
+                <input placeholder="TÌtulo del ticket *" required value={form.title} onChange={e => setForm({...form, title: e.target.value})}
                   style={{ padding: "10px 14px", borderRadius: "8px", border: "1px solid #E5E7EB", fontSize: "13px", outline: "none", fontFamily: "inherit" }}/>
-                <textarea placeholder="Descripci√≥n del problema..." value={form.description} onChange={e => setForm({...form, description: e.target.value})}
+                <textarea placeholder="DescripciÛn del problema..." value={form.description} onChange={e => setForm({...form, description: e.target.value})}
                   style={{ padding: "10px 14px", borderRadius: "8px", border: "1px solid #E5E7EB", fontSize: "13px", minHeight: "80px", resize: "none", outline: "none", fontFamily: "inherit" }}/>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
                   <div>
@@ -329,11 +369,11 @@ export default function Dashboard() {
                       <option value="low">Baja</option>
                       <option value="medium">Media</option>
                       <option value="high">Alta</option>
-                      <option value="critical">Cr√≠tica</option>
+                      <option value="critical">CrÌtica</option>
                     </select>
                   </div>
                 </div>
-                <input placeholder="Categor√≠a (ej: Hardware, Red, Software)" value={form.category} onChange={e => setForm({...form, category: e.target.value})}
+                <input placeholder="CategorÌa (ej: Hardware, Red, Software)" value={form.category} onChange={e => setForm({...form, category: e.target.value})}
                   style={{ padding: "10px 14px", borderRadius: "8px", border: "1px solid #E5E7EB", fontSize: "13px", outline: "none", fontFamily: "inherit" }}/>
               </div>
               <div style={{ display: "flex", gap: "10px", marginTop: "20px" }}>
@@ -347,6 +387,18 @@ export default function Dashboard() {
             </form>
           </div>
         </div>
+      )}
+
+      {/* MODAL ASIGNAR T…CNICO */}
+      {assignModal.open && assignModal.ticketId && (
+        <AssignTechnicianModal
+          ticketId={assignModal.ticketId}
+          ticketNumber={assignModal.ticketNumber}
+          currentAssigneeId={assignModal.currentAssigneeId}
+          isOpen={assignModal.open}
+          onClose={() => setAssignModal({ open: false, ticketId: null, ticketNumber: "", currentAssigneeId: null })}
+          onAssigned={handleAssigned}
+        />
       )}
     </div>
   );
