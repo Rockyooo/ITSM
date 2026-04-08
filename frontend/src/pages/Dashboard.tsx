@@ -112,7 +112,14 @@ export default function Dashboard() {
     setAssignModal({ open: false, ticketId: null, ticketNumber: "", currentAssigneeId: null });
   };
 
-  const filtered = filterStatus === "all" ? tickets : tickets.filter(t => t.status === filterStatus);
+  const PRIORITY_ORDER: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 };
+  const filtered = (filterStatus === "all" ? tickets : tickets.filter(t => t.status === filterStatus))
+    .sort((a, b) => {
+      const pa = PRIORITY_ORDER[a.priority] ?? 99;
+      const pb = PRIORITY_ORDER[b.priority] ?? 99;
+      if (pa !== pb) return pa - pb;
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
 
   return (
     <div style={{ display: "flex", height: "100vh", fontFamily: "'DM Sans', -apple-system, sans-serif", background: "#F8F9FC", color: "#111827" }}>
@@ -132,6 +139,7 @@ export default function Dashboard() {
               <div style={{ fontSize: "10px", color: "#9CA3AF", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "4px" }}>Empresa</div>
               <select value={activeTenant} onChange={e => setActiveTenant(e.target.value)}
                 style={{ width: "100%", padding: "7px 10px", borderRadius: "8px", border: "1px solid #E5E7EB", fontSize: "12px", color: "#111827", background: "#F9FAFB", outline: "none", cursor: "pointer" }}>
+                <option value="">Todas las empresas</option>
                 {tenants.map((t: any) => (
                   <option key={t.tenant_id} value={t.tenant_id}>{t.tenant_name}</option>
                 ))}
@@ -437,6 +445,8 @@ export default function Dashboard() {
     </div>
   );
 }
+
+
 
 
 
