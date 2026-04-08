@@ -1,4 +1,4 @@
-﻿from sqlalchemy import Column, String, Integer, DateTime, Boolean, Text, ForeignKey, Enum
+from sqlalchemy import Column, String, Integer, DateTime, Boolean, Text, ForeignKey, Enum
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.dialects.postgresql import UUID
 import uuid, datetime, enum
@@ -13,6 +13,7 @@ class Tenant(Base):
     id            = Column(String, primary_key=True, default=uid)
     name          = Column(String(100), nullable=False)
     slug          = Column(String(50), unique=True, nullable=False)
+    domain        = Column(String(100), unique=True)
     is_active     = Column(Boolean, default=True)
     created_at    = Column(DateTime, default=now)
 
@@ -78,3 +79,4 @@ class Asset(Base):
     assigned_to   = Column(String, ForeignKey("users.id"))
     status        = Column(String(30), default="active")
     created_at    = Column(DateTime, default=now)
+
