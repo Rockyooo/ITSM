@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { api } from "../lib/api";
 import { useAuthStore } from "../store/auth";
 import AssignTechnicianModal from "./AssignTechnicianModal";
@@ -42,6 +43,8 @@ export default function Dashboard() {
   const [showForm, setShowForm] = useState(false);
   const [filterStatus, setFilterStatus] = useState("all");
   const [form, setForm] = useState({ title: "", description: "", priority: "medium", ticket_type: "incident", category: "" });
+  const navigate = useNavigate();
+  const location = useLocation();
   const [assignModal, setAssignModal] = useState<{ open: boolean; ticketId: number | null; ticketNumber: string; currentAssigneeId: number | null }>
     ({ open: false, ticketId: null, ticketNumber: "", currentAssigneeId: null });
 
@@ -112,14 +115,14 @@ export default function Dashboard() {
         </div>
         <nav style={{ padding: "12px 8px", flex: 1 }}>
           {[
-            { icon: "?", label: "Dashboard", active: true },
-            { icon: "??", label: "Tickets" },
-            { icon: "??", label: "Inventario" },
-            { icon: "??", label: "Usuarios" },
-            { icon: "??", label: "Base de conocimiento" },
-            { icon: "??", label: "Reportes" },
+            { icon: "¦", label: "Dashboard",            route: "/",         active: location.pathname === "/" },
+            { icon: "?", label: "Tickets",              route: "/",         active: false },
+            { icon: "?", label: "Inventario",           route: "/",         active: false },
+            { icon: "?", label: "Usuarios",             route: "/permisos", active: location.pathname === "/permisos" },
+            { icon: "?", label: "Base de conocimiento", route: "/",         active: false },
+            { icon: "?", label: "Reportes",             route: "/",         active: false },
           ].map(item => (
-            <div key={item.label} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "8px 10px", borderRadius: "8px", marginBottom: "2px", background: item.active ? "#EEF4FF" : "transparent", color: item.active ? "#1D6AE5" : "#6B7280", fontSize: "13px", fontWeight: item.active ? "600" : "400", cursor: "pointer" }}>
+            <div key={item.label} onClick={() => item.route && navigate(item.route)} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "8px 10px", borderRadius: "8px", marginBottom: "2px", background: item.active ? "#EEF4FF" : "transparent", color: item.active ? "#1D6AE5" : "#6B7280", fontSize: "13px", fontWeight: item.active ? "600" : "400", cursor: "pointer" }}>
               <span style={{ fontSize: "14px" }}>{item.icon}</span>
               {item.label}
             </div>
@@ -403,3 +406,6 @@ export default function Dashboard() {
     </div>
   );
 }
+
+
+
