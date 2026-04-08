@@ -6,6 +6,7 @@ import Dashboard from "./pages/Dashboard";
 import NuevoTicket from "./pages/NuevoTicket";
 import Permisos from "./pages/Permisos";
 import SupervisorView from "./pages/SupervisorView";
+import Empresas from "./pages/Empresas";
 import { useAuthStore } from "./store/auth";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
@@ -29,9 +30,11 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         <Route path="/nuevo-ticket" element={<NuevoTicket />} />
         <Route path="/" element={<PrivateRoute><RoleRedirect /></PrivateRoute>} />
         <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+        <Route path="/empresas" element={<PrivateRoute><Empresas /></PrivateRoute>} />
         <Route path="/permisos" element={<PrivateRoute><Permisos /></PrivateRoute>} />
         <Route path="/supervisor" element={<PrivateRoute><SupervisorView /></PrivateRoute>} />
       </Routes>
     </BrowserRouter>
   </React.StrictMode>
 );
+
