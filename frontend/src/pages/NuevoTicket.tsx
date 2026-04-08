@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+ï»¿import { useState, useEffect } from "react";
 import { api } from "../lib/api";
 
 const TIPOS = [
@@ -109,10 +109,10 @@ export default function NuevoTicket() {
       {/* Card principal */}
       <div style={{ width:"100%", maxWidth:"560px", background:"#fff", borderRadius:"16px", boxShadow:"0 4px 24px rgba(0,0,0,0.08)", overflow:"hidden" }}>
 
-        {/* PASO 0 — Tipo */}
+        {/* PASO 0 ï¿½ Tipo */}
         {paso === 0 && (
           <div style={{ padding:"28px 24px" }}>
-            <h2 style={{ margin:"0 0 6px", fontSize:"17px", fontWeight:"700", color:"#111827" }}>¿Que necesitas?</h2>
+            <h2 style={{ margin:"0 0 6px", fontSize:"17px", fontWeight:"700", color:"#111827" }}>ï¿½Que necesitas?</h2>
             <p style={{ margin:"0 0 20px", fontSize:"13px", color:"#9CA3AF" }}>Selecciona el tipo de solicitud</p>
             <div style={{ display:"flex", flexDirection:"column", gap:"10px" }}>
               {TIPOS.map(t => (
@@ -130,10 +130,10 @@ export default function NuevoTicket() {
           </div>
         )}
 
-        {/* PASO 1 — Categoria */}
+        {/* PASO 1 ï¿½ Categoria */}
         {paso === 1 && (
           <div style={{ padding:"28px 24px" }}>
-            <h2 style={{ margin:"0 0 6px", fontSize:"17px", fontWeight:"700", color:"#111827" }}>¿Cual es la categoria?</h2>
+            <h2 style={{ margin:"0 0 6px", fontSize:"17px", fontWeight:"700", color:"#111827" }}>ï¿½Cual es la categoria?</h2>
             <p style={{ margin:"0 0 20px", fontSize:"13px", color:"#9CA3AF" }}>Tipo: <strong>{tipoActual?.label}</strong></p>
             <div style={{ display:"flex", flexWrap:"wrap", gap:"8px", marginBottom:"20px" }}>
               {(CATEGORIAS[tipo] || []).map(cat => (
@@ -168,10 +168,10 @@ export default function NuevoTicket() {
           </div>
         )}
 
-        {/* PASO 2 — Detalle */}
+        {/* PASO 2 ï¿½ Detalle */}
         {paso === 2 && (
           <div style={{ padding:"28px 24px" }}>
-            <h2 style={{ margin:"0 0 6px", fontSize:"17px", fontWeight:"700", color:"#111827" }}>Cuéntanos el detalle</h2>
+            <h2 style={{ margin:"0 0 6px", fontSize:"17px", fontWeight:"700", color:"#111827" }}>Cuï¿½ntanos el detalle</h2>
             <p style={{ margin:"0 0 20px", fontSize:"13px", color:"#9CA3AF" }}>Completa tu informacion y describe el problema</p>
             <div style={{ display:"flex", flexDirection:"column", gap:"14px" }}>
               <div>
@@ -218,7 +218,7 @@ export default function NuevoTicket() {
           </div>
         )}
 
-        {/* PASO 3 — Confirmacion */}
+        {/* PASO 3 ï¿½ Confirmacion */}
         {paso === 3 && ticketCreado && (
           <div style={{ padding:"40px 24px", textAlign:"center" }}>
             <div style={{ width:"64px", height:"64px", background:"#ECFDF5", borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"28px", margin:"0 auto 16px" }}>?</div>
@@ -266,7 +266,8 @@ export default function NuevoTicket() {
         )}
       </div>
 
-      <p style={{ marginTop:"24px", fontSize:"11px", color:"#D1D5DB" }}>Fusion I.T. — Mesa de soporte</p>
+      <p style={{ marginTop:"24px", fontSize:"11px", color:"#D1D5DB" }}>Fusion I.T. ï¿½ Mesa de soporte</p>
     </div>
   );
 }
+

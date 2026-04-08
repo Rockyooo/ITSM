@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+ï»¿import { useState, useEffect } from "react";
 import { api } from "../lib/api";
 
 const PERMISOS_LABELS: Record<string, { label: string; color: string; bg: string }> = {
@@ -159,7 +159,7 @@ export default function Permisos() {
                   style={{ display:"block", width:"100%", marginTop:"4px", padding:"10px 14px", borderRadius:"8px", border:"1px solid #E5E7EB", fontSize:"13px", background:"#fff", outline:"none" }}>
                   <option value="">Selecciona un usuario...</option>
                   {usuarios.map(u => (
-                    <option key={u.id} value={u.id}>{u.full_name} ({u.role}) — {u.email}</option>
+                    <option key={u.id} value={u.id}>{u.full_name} ({u.role}) ï¿½ {u.email}</option>
                   ))}
                 </select>
               </div>
@@ -180,7 +180,7 @@ export default function Permisos() {
                   Permisos *
                   {usuarioSeleccionado?.role === "supervisor" && (
                     <span style={{ marginLeft:"8px", color:"#D97706", fontWeight:"400", textTransform:"none" }}>
-                      (supervisor — solo lectura + comentarios)
+                      (supervisor ï¿½ solo lectura + comentarios)
                     </span>
                   )}
                 </label>
@@ -217,3 +217,4 @@ export default function Permisos() {
     </div>
   );
 }
+

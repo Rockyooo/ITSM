@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+ï»¿import { useState, useEffect } from "react";
 import { api } from "../lib/api";
 import { useAuthStore } from "../store/auth";
 
@@ -14,7 +14,7 @@ const PRIORITY_CONFIG: Record<string, { label: string; color: string }> = {
   low:      { label: "Baja",    color: "#6B7280" },
   medium:   { label: "Media",   color: "#D97706" },
   high:     { label: "Alta",    color: "#DC2626" },
-  critical: { label: "Critica", color: "#7C3AED" },
+  Critical: { label: "Critica", color: "#7C3AED" },
 };
 
 export default function SupervisorView() {
@@ -126,7 +126,7 @@ export default function SupervisorView() {
         <div style={{ background:"#fff", borderBottom:"1px solid #E5E7EB", padding:"0 24px", height:"56px", display:"flex", alignItems:"center", justifyContent:"space-between", flexShrink:0 }}>
           <div>
             <h1 style={{ margin:0, fontSize:"16px", fontWeight:"700" }}>Seguimiento de tickets</h1>
-            <p style={{ margin:0, fontSize:"12px", color:"#9CA3AF" }}>Solo lectura — puedes comentar y generar alertas</p>
+            <p style={{ margin:0, fontSize:"12px", color:"#9CA3AF" }}>Solo lectura ï¿½ puedes comentar y generar alertas</p>
           </div>
           <div style={{ padding:"6px 14px", background:"#ECFDF5", border:"1px solid #A7F3D0", borderRadius:"20px", fontSize:"12px", color:"#059669", fontWeight:"600" }}>
             Modo supervisor
@@ -268,3 +268,4 @@ export default function SupervisorView() {
     </div>
   );
 }
+

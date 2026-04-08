@@ -1,8 +1,8 @@
-import { useState } from "react";
+ï»¿import { useState } from "react";
 import { useAuthStore } from "../store/auth";
 
 // ---------------------------------------------
-// BRANDING — edita estas variables para personalizar
+// BRANDING ï¿½ edita estas variables para personalizar
 // Reemplaza /logo.png por tu archivo en frontend/public/
 // ---------------------------------------------
 const BRANDING = {
@@ -66,7 +66,7 @@ export default function Login() {
   return (
     <div style={{ minHeight:"100vh", display:"flex", fontFamily:"'DM Sans',-apple-system,sans-serif", background: BRANDING.bgColor }}>
 
-      {/* Panel izquierdo — decorativo */}
+      {/* Panel izquierdo ï¿½ decorativo */}
       <div style={{ display:"none", flex:1, background:`linear-gradient(135deg, ${BRANDING.primaryColor}22 0%, ${BRANDING.bgColor} 100%)`,
         alignItems:"center", justifyContent:"center", padding:"48px",
         borderRight:"1px solid #1E293B" }}
@@ -82,11 +82,11 @@ export default function Login() {
         </div>
       </div>
 
-      {/* Panel derecho — formulario */}
+      {/* Panel derecho ï¿½ formulario */}
       <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", padding:"24px" }}>
         <div style={{ width:"100%", maxWidth:"400px" }}>
 
-          {/* Logo — solo imagen, sin nombre debajo cuando carga */}
+          {/* Logo ï¿½ solo imagen, sin nombre debajo cuando carga */}
           <div style={{ textAlign:"center", marginBottom:"32px" }}>
             {!logoError ? (
               <>
@@ -148,7 +148,7 @@ export default function Login() {
                 </label>
                 <input
                   type="password" value={password} onChange={e => setPassword(e.target.value)}
-                  placeholder="••••••••" required
+                  placeholder="ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½" required
                   style={inputStyle}
                   onFocus={e => e.target.style.borderColor = BRANDING.primaryColor}
                   onBlur={e => e.target.style.borderColor = "#334155"}
@@ -188,7 +188,7 @@ export default function Login() {
 
           {/* Footer */}
           <div style={{ textAlign:"center", marginTop:"32px", fontSize:"11px", color:"#334155" }}>
-            {BRANDING.appName} — Mesa de soporte TI
+            {BRANDING.appName} ï¿½ Mesa de soporte TI
           </div>
         </div>
       </div>
@@ -202,6 +202,7 @@ export default function Login() {
     </div>
   );
 }
+
 
 
 

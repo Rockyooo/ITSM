@@ -8,7 +8,7 @@ import Permisos from "./pages/Permisos";
 import SupervisorView from "./pages/SupervisorView";
 import { useAuthStore } from "./store/auth";
 
-function PrivateRoute({ children, roles }: { children: React.ReactNode; roles?: string[] }) {
+function PrivateRoute({ children }: { children: React.ReactNode }) {
   const token = localStorage.getItem("token");
   if (!token) return <Navigate to="/login" />;
   return <>{children}</>;
