@@ -5,10 +5,20 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import NuevoTicket from "./pages/NuevoTicket";
 import Permisos from "./pages/Permisos";
+import SupervisorView from "./pages/SupervisorView";
+import { useAuthStore } from "./store/auth";
 
-function PrivateRoute({ children }: { children: React.ReactNode }) {
+function PrivateRoute({ children, roles }: { children: React.ReactNode; roles?: string[] }) {
   const token = localStorage.getItem("token");
-  return token ? <>{children}</> : <Navigate to="/login" />;
+  if (!token) return <Navigate to="/login" />;
+  return <>{children}</>;
+}
+
+function RoleRedirect() {
+  const { user } = useAuthStore();
+  if (!user) return <Navigate to="/login" />;
+  if (user.role === "supervisor") return <Navigate to="/supervisor" />;
+  return <Navigate to="/dashboard" />;
 }
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
@@ -17,8 +27,10 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/nuevo-ticket" element={<NuevoTicket />} />
-        <Route path="/" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+        <Route path="/" element={<PrivateRoute><RoleRedirect /></PrivateRoute>} />
+        <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
         <Route path="/permisos" element={<PrivateRoute><Permisos /></PrivateRoute>} />
+        <Route path="/supervisor" element={<PrivateRoute><SupervisorView /></PrivateRoute>} />
       </Routes>
     </BrowserRouter>
   </React.StrictMode>
