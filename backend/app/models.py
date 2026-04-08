@@ -1,7 +1,6 @@
-from sqlalchemy import Column, String, Integer, DateTime, Boolean, Text, ForeignKey, Enum
+from sqlalchemy import Column, String, Integer, DateTime, Boolean, Text, ForeignKey, JSON
 from sqlalchemy.orm import declarative_base
-from sqlalchemy.dialects.postgresql import UUID
-import uuid, datetime, enum
+import uuid, datetime
 
 Base = declarative_base()
 
@@ -19,15 +18,23 @@ class Tenant(Base):
 
 class User(Base):
     __tablename__ = "users"
-    id            = Column(String, primary_key=True, default=uid)
-    tenant_id     = Column(String, ForeignKey("tenants.id"), nullable=False)
-    email         = Column(String(200), unique=True, nullable=False)
-    full_name     = Column(String(200))
+    id              = Column(String, primary_key=True, default=uid)
+    tenant_id       = Column(String, ForeignKey("tenants.id"), nullable=False)
+    email           = Column(String(200), unique=True, nullable=False)
+    full_name       = Column(String(200))
     hashed_password = Column(String(200))
-    role          = Column(String(20), default="client")
-    is_active     = Column(Boolean, default=True)
-    totp_secret   = Column(String(100))
-    created_at    = Column(DateTime, default=now)
+    role            = Column(String(20), default="client")
+    is_active       = Column(Boolean, default=True)
+    totp_secret     = Column(String(100))
+    created_at      = Column(DateTime, default=now)
+
+class TenantUserPermission(Base):
+    __tablename__ = "tenant_user_permissions"
+    id          = Column(String, primary_key=True, default=uid)
+    user_id     = Column(String, ForeignKey("users.id"), nullable=False)
+    tenant_id   = Column(String, ForeignKey("tenants.id"), nullable=False)
+    permissions = Column(JSON, default=list)
+    created_at  = Column(DateTime, default=now)
 
 class Ticket(Base):
     __tablename__ = "tickets"
@@ -49,12 +56,13 @@ class Ticket(Base):
 
 class TicketMessage(Base):
     __tablename__ = "ticket_messages"
-    id            = Column(String, primary_key=True, default=uid)
-    ticket_id     = Column(String, ForeignKey("tickets.id"), nullable=False)
-    author_id     = Column(String, ForeignKey("users.id"))
-    body          = Column(Text, nullable=False)
-    is_internal   = Column(Boolean, default=False)
-    created_at    = Column(DateTime, default=now)
+    id          = Column(String, primary_key=True, default=uid)
+    ticket_id   = Column(String, ForeignKey("tickets.id"), nullable=False)
+    author_id   = Column(String, ForeignKey("users.id"))
+    body        = Column(Text, nullable=False)
+    is_internal = Column(Boolean, default=False)
+    is_alert    = Column(Boolean, default=False)
+    created_at  = Column(DateTime, default=now)
 
 class Attachment(Base):
     __tablename__ = "attachments"
@@ -62,8 +70,8 @@ class Attachment(Base):
     message_id   = Column(String, ForeignKey("ticket_messages.id"), nullable=False)
     ticket_id    = Column(String, ForeignKey("tickets.id"), nullable=False)
     tenant_id    = Column(String, ForeignKey("tenants.id"), nullable=False)
-    filename     = Column(String(300), nullable=False)   # nombre original
-    stored_name  = Column(String(300), nullable=False)   # nombre en storage
+    filename     = Column(String(300), nullable=False)
+    stored_name  = Column(String(300), nullable=False)
     file_url     = Column(String(500), nullable=False)
     content_type = Column(String(100))
     file_size    = Column(Integer)
@@ -79,4 +87,3 @@ class Asset(Base):
     assigned_to   = Column(String, ForeignKey("users.id"))
     status        = Column(String(30), default="active")
     created_at    = Column(DateTime, default=now)
-
