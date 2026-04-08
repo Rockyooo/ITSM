@@ -72,3 +72,4 @@ async def run_migrations():
 @app.get("/health")
 async def health():
     return {"status": "ok", "service": "ITSM Fusion I.T.", "version": "1.0.0"}
+
