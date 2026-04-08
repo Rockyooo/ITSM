@@ -6,6 +6,7 @@ from datetime import datetime
 from app.database import get_db
 from app.models import User
 from app.routers.auth import get_current_user, hash_password
+import uuid
 
 router = APIRouter(prefix="/api/v1/users", tags=["users"])
 
@@ -21,7 +22,7 @@ class UserUpdate(BaseModel):
     is_active: Optional[bool] = None
 
 class UserResponse(BaseModel):
-    id: int
+    id: str
     email: str
     full_name: str
     role: str
@@ -30,6 +31,17 @@ class UserResponse(BaseModel):
     created_at: datetime
     class Config:
         from_attributes = True
+
+@router.get("/technicians", response_model=List[UserResponse])
+def list_technicians(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return db.query(User).filter(
+        User.tenant_id == current_user.tenant_id,
+        User.role.in_(["technician", "admin"]),
+        User.is_active == True,
+    ).all()
 
 @router.get("/", response_model=List[UserResponse])
 def list_users(
@@ -44,20 +56,9 @@ def list_users(
     if is_active is not None: query = query.filter(User.is_active == is_active)
     return query.offset(skip).limit(limit).all()
 
-@router.get("/technicians", response_model=List[UserResponse])
-def list_technicians(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    return db.query(User).filter(
-        User.tenant_id == current_user.tenant_id,
-        User.role.in_(["technician", "admin"]),
-        User.is_active == True,
-    ).all()
-
 @router.get("/{user_id}", response_model=UserResponse)
 def get_user(
-    user_id: int,
+    user_id: str,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -76,6 +77,7 @@ def create_user(
     if db.query(User).filter(User.email == payload.email).first():
         raise HTTPException(status_code=400, detail="El email ya esta registrado")
     new_user = User(
+        id=str(uuid.uuid4()),
         email=payload.email,
         full_name=payload.full_name,
         hashed_password=hash_password(payload.password),
@@ -90,7 +92,7 @@ def create_user(
 
 @router.patch("/{user_id}", response_model=UserResponse)
 def update_user(
-    user_id: int,
+    user_id: str,
     payload: UserUpdate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -112,7 +114,7 @@ def update_user(
 
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
 def deactivate_user(
-    user_id: int,
+    user_id: str,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
