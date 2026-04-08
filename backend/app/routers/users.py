@@ -72,7 +72,7 @@ def create_user(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    if current_user.role != "admin":
+    if current_user.role not in ("admin", "superadmin"):
         raise HTTPException(status_code=403, detail="Solo administradores pueden crear usuarios")
     if db.query(User).filter(User.email == payload.email).first():
         raise HTTPException(status_code=400, detail="El email ya esta registrado")
@@ -124,3 +124,4 @@ def deactivate_user(
     if not user: raise HTTPException(status_code=404, detail="Usuario no encontrado")
     user.is_active = False
     db.commit()
+
