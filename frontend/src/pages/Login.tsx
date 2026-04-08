@@ -30,10 +30,15 @@ export default function Login() {
     setError(""); setLoading(true);
     try {
       await login(email, password);
-      // Redireccion segun rol
-      const role = useAuthStore.getState().user?.role;
-      if (role === "supervisor") {
-        window.location.href = "/supervisor";
+      // Leer el rol directo del token decodificado
+      const token = localStorage.getItem("token");
+      if (token) {
+        const payload = JSON.parse(atob(token.split(".")[1]));
+        if (payload.role === "supervisor") {
+          window.location.href = "/supervisor";
+        } else {
+          window.location.href = "/dashboard";
+        }
       } else {
         window.location.href = "/dashboard";
       }
@@ -95,8 +100,8 @@ export default function Login() {
                   style={{ width:"64px", height:"64px", objectFit:"contain" }}
                 />
               ) : (
-                <span style={{ fontSize:"28px", fontWeight:"800", color:"#fff" }}>
-                  {BRANDING.logoFallback}
+                <span style={{ fontSize:"13px", fontWeight:"800", color:"#fff", textAlign:"center", padding:"0 6px", lineHeight:"1.2" }}>
+                  {BRANDING.appName}
                 </span>
               )}
             </div>
@@ -193,3 +198,5 @@ export default function Login() {
     </div>
   );
 }
+
+
