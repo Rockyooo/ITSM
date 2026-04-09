@@ -6,7 +6,7 @@ from passlib.context import CryptContext
 from pydantic import BaseModel
 from datetime import datetime, timedelta
 from app.database import get_db
-from app.models import User
+from app.models import User, Tenant
 import os, uuid
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
@@ -80,13 +80,16 @@ def login(form: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get
     return {"access_token": token, "token_type": "bearer"}
 
 @router.get("/me")
-def me(current_user: User = Depends(get_current_user)):
+def me(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    tenant = db.query(Tenant).filter(Tenant.id == current_user.tenant_id).first()
     return {
         "id": current_user.id,
         "email": current_user.email,
         "full_name": current_user.full_name,
         "role": current_user.role,
         "tenant_id": current_user.tenant_id,
+        "tenant_name": tenant.name if tenant else None,
+        "tenant_logo": tenant.logo_url if tenant else None,
     }
 
 

@@ -182,7 +182,9 @@ export function Sidebar() {
                   fontSize: '12px', fontWeight: '700', color: 'rgba(255,255,255,0.9)',
                   overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', margin: 0,
                 }}>{user?.full_name || 'Usuario'}</p>
-                <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.35)', margin: 0, textTransform: 'capitalize' }}>{user?.role}</p>
+                <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.35)', margin: 0, textTransform: 'capitalize' }}>
+                  {user?.role} {user?.tenant_name ? `• ${user?.tenant_name}` : ''}
+                </p>
               </div>
               <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.35)', padding: '4px' }}>
                 <Bell size={15} />

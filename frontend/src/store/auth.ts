@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { api } from "../lib/api";
 
-interface User { id: string; email: string; full_name: string; role: string; tenant_id: string; }
+interface User { id: string; email: string; full_name: string; role: string; tenant_id: string; tenant_name?: string; tenant_logo?: string; }
 
 interface AuthStore {
   user: User | null; token: string | null;
