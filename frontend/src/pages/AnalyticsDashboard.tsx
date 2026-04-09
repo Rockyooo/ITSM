@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AreaChart, Area, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
-import { TrendingUp, CheckCircle, Clock, AlertTriangle, Ticket, Users, Building2, ArrowUpRight, ArrowDownRight, Activity } from 'lucide-react';
+import { TrendingUp, CheckCircle, Clock, AlertTriangle, Tag, Users, Building, ChevronUp, ChevronDown, BarChart2 } from 'lucide-react';
 import { api } from '../lib/api';
 import { useAuthStore } from '../store/auth';
 const STATUS_COLORS: Record<string,string> = { open:'#3b82f6', in_progress:'#f59e0b', pending:'#8b5cf6', resolved:'#10b981', closed:'#6b7280' };
@@ -37,7 +37,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
         </div>
         {tenants.length > 0 && (
           <div style={{ display:'flex', alignItems:'center', gap:'8px', background:'#fff', border:'1px solid #e2e8f0', borderRadius:'10px', padding:'8px 12px' }}>
-            <Building2 size={15} color='#3b82f6' />
+            <Building size={15} color='#3b82f6' />
             <select value={activeTenant} onChange={e => setActiveTenant(e.target.value)} style={{ background:'transparent', border:'none', fontSize:'13px', fontWeight:'600', color:'#374151', outline:'none', cursor:'pointer' }}>
               <option value='all'>Todas las empresas</option>
               {tenants.map(t => <option key={t.tenant_id} value={t.tenant_id}>{t.tenant_name}</option>)}
@@ -54,7 +54,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
               <div style={{ width:'38px', height:'38px', background:k.bg, borderRadius:'10px', display:'flex', alignItems:'center', justifyContent:'center' }}>
                 <k.icon size={18} color={k.color} />
               </div>
-              {k.trend && <div style={{ fontSize:'11px', fontWeight:'600', color: k.trend==='up' ? '#10b981' : '#ef4444', display:'flex', alignItems:'center' }}>{k.trend==='up' ? <ArrowUpRight size={14}/> : <ArrowDownRight size={14}/>}</div>}
+              {k.trend && <div style={{ fontSize:'11px', fontWeight:'600', color: k.trend==='up' ? '#10b981' : '#ef4444', display:'flex', alignItems:'center' }}>{k.trend==='up' ? <ChevronUp size={14}/> : <ChevronDown size={14}/>}</div>}
             </div>
             <p style={{ margin:0, fontSize:'28px', fontWeight:'800', color:'#0f172a', letterSpacing:'-0.02em' }}>{k.value}</p>
             <p style={{ margin:'2px 0 0', fontSize:'12px', fontWeight:'600', color:'#64748b' }}>{k.label}</p>
