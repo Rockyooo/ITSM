@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { api } from "../lib/api";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store/auth";
@@ -9,7 +9,7 @@ interface Tenant {
 }
 
 export default function Empresas() {
-  const { user } = useAuthStore();
+  const { user, fetchMe } = useAuthStore();
   const navigate = useNavigate();
   const [empresas, setEmpresas] = useState<Tenant[]>([]);
   const [loading, setLoading] = useState(true);
@@ -19,7 +19,7 @@ export default function Empresas() {
   const [error, setError] = useState("");
   const [form, setForm] = useState({ name: "", domain: "" });
 
-  useEffect(() => { cargar(); }, []);
+  useEffect(() => { fetchMe(); cargar(); }, []);
 
   const cargar = async () => {
     setLoading(true);
@@ -51,7 +51,7 @@ export default function Empresas() {
         <div>
           <div style={{ display:"flex", alignItems:"center", gap:"10px", marginBottom:"4px" }}>
             <button onClick={() => navigate("/dashboard")} style={{ background:"none", border:"none", color:"#9CA3AF", cursor:"pointer", fontSize:"13px", padding:0 }}>Dashboard</button>
-            <span style={{ color:"#E5E7EB" }}>›</span>
+            <span style={{ color:"#E5E7EB" }}>�</span>
             <span style={{ fontSize:"13px", color:"#111827", fontWeight:"600" }}>Empresas</span>
           </div>
           <h1 style={{ margin:"0 0 4px", fontSize:"20px", fontWeight:"700" }}>Empresas cliente</h1>
@@ -137,3 +137,4 @@ export default function Empresas() {
     </div>
   );
 }
+
