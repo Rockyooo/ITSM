@@ -66,6 +66,14 @@ async def run_migrations():
             conn.commit()
         except: pass
         try:
+            conn.execute(text("ALTER TABLE tenants ADD COLUMN IF NOT EXISTS nit VARCHAR(50)"))
+            conn.execute(text("ALTER TABLE tenants ADD COLUMN IF NOT EXISTS phone VARCHAR(50)"))
+            conn.execute(text("ALTER TABLE tenants ADD COLUMN IF NOT EXISTS contact_email VARCHAR(200)"))
+            conn.execute(text("ALTER TABLE tenants ADD COLUMN IF NOT EXISTS address VARCHAR(300)"))
+            conn.execute(text("ALTER TABLE tenants ADD COLUMN IF NOT EXISTS logo_url VARCHAR(500)"))
+            conn.commit()
+        except: pass
+        try:
             conn.execute(text("UPDATE users SET role = 'superadmin' WHERE email = 'admin@fusion-it.co' AND role = 'admin'"))
             conn.commit()
         except: pass
@@ -73,5 +81,6 @@ async def run_migrations():
 @app.get("/health")
 async def health():
     return {"status": "ok", "service": "ITSM Fusion I.T.", "version": "1.0.0"}
+
 
 

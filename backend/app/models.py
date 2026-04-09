@@ -13,6 +13,11 @@ class Tenant(Base):
     name          = Column(String(100), nullable=False)
     slug          = Column(String(50), unique=True, nullable=False)
     domain        = Column(String(100), unique=True)
+    nit           = Column(String(50))
+    phone         = Column(String(50))
+    contact_email = Column(String(200))
+    address       = Column(String(300))
+    logo_url      = Column(String(500))
     is_active     = Column(Boolean, default=True)
     created_at    = Column(DateTime, default=now)
 
@@ -87,3 +92,4 @@ class Asset(Base):
     assigned_to   = Column(String, ForeignKey("users.id"))
     status        = Column(String(30), default="active")
     created_at    = Column(DateTime, default=now)
+

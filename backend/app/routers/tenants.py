@@ -15,11 +15,19 @@ GLOBAL_ROLES = {"superadmin", "admin"}
 class TenantCreate(BaseModel):
     name: str
     domain: str
+    nit: Optional[str] = None
+    phone: Optional[str] = None
+    contact_email: Optional[str] = None
+    address: Optional[str] = None
     logo_url: Optional[str] = None
 
 class TenantUpdate(BaseModel):
     name: Optional[str] = None
     domain: Optional[str] = None
+    nit: Optional[str] = None
+    phone: Optional[str] = None
+    contact_email: Optional[str] = None
+    address: Optional[str] = None
     logo_url: Optional[str] = None
     is_active: Optional[bool] = None
 
@@ -28,6 +36,10 @@ class TenantResponse(BaseModel):
     name: str
     slug: str
     domain: Optional[str]
+    nit: Optional[str] = None
+    phone: Optional[str] = None
+    contact_email: Optional[str] = None
+    address: Optional[str] = None
     logo_url: Optional[str] = None
     is_active: bool
     created_at: datetime
@@ -104,6 +116,11 @@ def create_tenant(
         name=payload.name,
         slug=slug,
         domain=payload.domain.lower(),
+        nit=payload.nit,
+        phone=payload.phone,
+        contact_email=payload.contact_email,
+        address=payload.address,
+        logo_url=payload.logo_url,
         is_active=True,
     )
     db.add(tenant)
@@ -132,6 +149,11 @@ def update_tenant(
         if existing:
             raise HTTPException(status_code=400, detail="Dominio ya en uso por otra empresa")
         tenant.domain = payload.domain.lower()
+    if payload.nit is not None: tenant.nit = payload.nit
+    if payload.phone is not None: tenant.phone = payload.phone
+    if payload.contact_email is not None: tenant.contact_email = payload.contact_email
+    if payload.address is not None: tenant.address = payload.address
+    if payload.logo_url is not None: tenant.logo_url = payload.logo_url
     if payload.is_active is not None:
         if current_user.role != "superadmin":
             raise HTTPException(status_code=403, detail="Solo superadmin puede activar/desactivar empresas")
@@ -154,3 +176,4 @@ def deactivate_tenant(
         raise HTTPException(status_code=404, detail="Empresa no encontrada")
     tenant.is_active = False
     db.commit()
+

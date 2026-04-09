@@ -5,7 +5,9 @@ import { useAuthStore } from "../store/auth";
 
 interface Tenant {
   id: string; name: string; slug: string; domain: string;
-  is_active: boolean; created_at: string; total_users: number; total_tickets: number;
+  nit?: string; phone?: string; contact_email?: string; address?: string;
+  logo_url?: string; is_active: boolean; created_at: string;
+  total_users: number; total_tickets: number;
 }
 
 export default function Empresas() {
@@ -17,7 +19,7 @@ export default function Empresas() {
   const [editando, setEditando] = useState<Tenant | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [form, setForm] = useState({ name: "", domain: "" });
+  const [form, setForm] = useState({ name: "", domain: "", nit: "", phone: "", contact_email: "", address: "" });
 
   useEffect(() => { fetchMe(); cargar(); }, []);
 
@@ -26,8 +28,8 @@ export default function Empresas() {
     try { const { data } = await api.get("/api/v1/tenants/"); setEmpresas(data); }
     catch {} finally { setLoading(false); }
   };
-  const abrirCrear = () => { setEditando(null); setForm({ name: "", domain: "" }); setError(""); setShowForm(true); };
-  const abrirEditar = (t: Tenant) => { setEditando(t); setForm({ name: t.name, domain: t.domain }); setError(""); setShowForm(true); };
+  const abrirCrear = () => { setEditando(null); setForm({ name: "", domain: "", nit: "", phone: "", contact_email: "", address: "" }); setError(""); setShowForm(true); };
+  const abrirEditar = (t: Tenant) => { setEditando(t); setForm({ name: t.name, domain: t.domain, nit: t.nit || "", phone: t.phone || "", contact_email: t.contact_email || "", address: t.address || "" }); setError(""); setShowForm(true); };
   const guardar = async () => {
     if (!form.name.trim() || !form.domain.trim()) { setError("Nombre y dominio son obligatorios"); return; }
     setSaving(true); setError("");
@@ -83,8 +85,10 @@ export default function Empresas() {
                     {t.is_active ? "Activa" : "Inactiva"}
                   </span>
                 </div>
-                <div style={{ display:"flex", gap:"16px", fontSize:"12px", color:"#6B7280" }}>
+                <div style={{ display:"flex", gap:"16px", fontSize:"12px", color:"#6B7280", flexWrap:"wrap" }}>
                   <span>@{t.domain}</span>
+                  {t.nit && <span>NIT: {t.nit}</span>}
+                  {t.phone && <span>{t.phone}</span>}
                   <span>{t.total_users} usuarios</span>
                   <span>{t.total_tickets} tickets</span>
                 </div>
@@ -124,6 +128,28 @@ export default function Empresas() {
                 </div>
                 <p style={{ margin:"4px 0 0", fontSize:"11px", color:"#9CA3AF" }}>Los usuarios con este dominio se asociaran automaticamente</p>
               </div>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px" }}>
+                <div>
+                  <label style={{ display:"block", fontSize:"11px", fontWeight:"600", color:"#6B7280", textTransform:"uppercase", letterSpacing:"0.05em", marginBottom:"6px" }}>NIT</label>
+                  <input value={form.nit} onChange={e => setForm({...form, nit: e.target.value})} placeholder="900.123.456-7"
+                    style={{ display:"block", width:"100%", padding:"10px 14px", borderRadius:"8px", border:"1px solid #E5E7EB", fontSize:"13px", outline:"none", boxSizing:"border-box", fontFamily:"inherit" }} />
+                </div>
+                <div>
+                  <label style={{ display:"block", fontSize:"11px", fontWeight:"600", color:"#6B7280", textTransform:"uppercase", letterSpacing:"0.05em", marginBottom:"6px" }}>Telefono</label>
+                  <input value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} placeholder="+57 300 000 0000"
+                    style={{ display:"block", width:"100%", padding:"10px 14px", borderRadius:"8px", border:"1px solid #E5E7EB", fontSize:"13px", outline:"none", boxSizing:"border-box", fontFamily:"inherit" }} />
+                </div>
+              </div>
+              <div>
+                <label style={{ display:"block", fontSize:"11px", fontWeight:"600", color:"#6B7280", textTransform:"uppercase", letterSpacing:"0.05em", marginBottom:"6px" }}>Correo de contacto</label>
+                <input value={form.contact_email} onChange={e => setForm({...form, contact_email: e.target.value})} placeholder="contacto@empresa.com"
+                  style={{ display:"block", width:"100%", padding:"10px 14px", borderRadius:"8px", border:"1px solid #E5E7EB", fontSize:"13px", outline:"none", boxSizing:"border-box", fontFamily:"inherit" }} />
+              </div>
+              <div>
+                <label style={{ display:"block", fontSize:"11px", fontWeight:"600", color:"#6B7280", textTransform:"uppercase", letterSpacing:"0.05em", marginBottom:"6px" }}>Direccion</label>
+                <input value={form.address} onChange={e => setForm({...form, address: e.target.value})} placeholder="Calle 123 # 45-67, Bogota"
+                  style={{ display:"block", width:"100%", padding:"10px 14px", borderRadius:"8px", border:"1px solid #E5E7EB", fontSize:"13px", outline:"none", boxSizing:"border-box", fontFamily:"inherit" }} />
+              </div>
             </div>
             <div style={{ padding:"14px 24px", borderTop:"1px solid #E5E7EB", background:"#F9FAFB", display:"flex", justifyContent:"flex-end", gap:"10px" }}>
               <button onClick={() => setShowForm(false)} style={{ padding:"9px 18px", background:"none", border:"1px solid #E5E7EB", borderRadius:"8px", fontSize:"13px", cursor:"pointer", color:"#374151" }}>Cancelar</button>
@@ -137,4 +163,8 @@ export default function Empresas() {
     </div>
   );
 }
+
+
+
+
 
