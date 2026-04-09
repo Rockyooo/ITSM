@@ -56,6 +56,8 @@ class Ticket(Base):
     category      = Column(String(100))
     due_at        = Column(DateTime)
     resolved_at   = Column(DateTime)
+    merged_into_id = Column(String, ForeignKey("tickets.id"), index=True)
+    merged_at     = Column(DateTime)
     created_at    = Column(DateTime, default=now, index=True)
     updated_at    = Column(DateTime, default=now, onupdate=now)
     __table_args__ = (
@@ -70,6 +72,7 @@ class TicketMessage(Base):
     ticket_id   = Column(String, ForeignKey("tickets.id"), nullable=False, index=True)
     author_id   = Column(String, ForeignKey("users.id"), index=True)
     body        = Column(Text, nullable=False)
+    message_type = Column(String(30), default="comment", index=True)  # comment|quote|alert
     is_internal = Column(Boolean, default=False)
     is_alert    = Column(Boolean, default=False)
     created_at  = Column(DateTime, default=now, index=True)

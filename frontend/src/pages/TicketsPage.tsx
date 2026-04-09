@@ -6,7 +6,7 @@ import AssignTechnicianModal from "./AssignTechnicianModal";
 import {
   Plus, X, Send, Lock, Unlock, ChevronDown,
   Clock, AlertTriangle, CheckCircle, Circle, Loader2,
-  UserCheck, UserPlus, Hash, Tag, Layers, ArrowLeft
+  UserCheck, UserPlus, Hash, Tag, Layers, ArrowLeft, GitMerge
 } from "lucide-react";
 
 // ─── Config ──────────────────────────────────────────────────────────────────
@@ -91,12 +91,20 @@ export default function TicketsPage() {
   const [sendingMsg, setSendingMsg] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [filterStatus, setFilterStatus] = useState("all");
+  const [filterMerged, setFilterMerged] = useState<"all" | "active" | "merged">("all");
   const [form, setForm] = useState({ title: "", description: "", priority: "medium", ticket_type: "incident", category: "" });
   const [tenants, setTenants] = useState<any[]>([]);
   const [activeTenant, setActiveTenant] = useState<string>("");
   const [assignModal, setAssignModal] = useState<{ open: boolean; ticketId: number | null; ticketNumber: string; currentAssigneeId: number | null }>(
     { open: false, ticketId: null, ticketNumber: "", currentAssigneeId: null }
   );
+  const [mergeModal, setMergeModal] = useState<{ open: boolean; source: any | null; targetId: string; loading: boolean; error: string }>({
+    open: false,
+    source: null,
+    targetId: "",
+    loading: false,
+    error: "",
+  });
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { fetchMe(); cargarTenants(); }, []);
@@ -165,7 +173,28 @@ export default function TicketsPage() {
     setAssignModal({ open: false, ticketId: null, ticketNumber: "", currentAssigneeId: null });
   };
 
-  const filtered = (filterStatus === "all" ? tickets : tickets.filter(t => t.status === filterStatus))
+  const openMergeModal = (ticket: any) => {
+    setMergeModal({ open: true, source: ticket, targetId: "", loading: false, error: "" });
+  };
+
+  const confirmMerge = async () => {
+    if (!mergeModal.source || !mergeModal.targetId) return;
+    setMergeModal((prev) => ({ ...prev, loading: true, error: "" }));
+    try {
+      await api.post(`/api/v1/tickets/${mergeModal.source.id}/merge`, { target_ticket_id: mergeModal.targetId });
+      setMergeModal({ open: false, source: null, targetId: "", loading: false, error: "" });
+      await loadTickets();
+    } catch (err: any) {
+      setMergeModal((prev) => ({ ...prev, loading: false, error: err?.response?.data?.detail ?? "No se pudo fusionar el ticket" }));
+    }
+  };
+
+  const filteredByStatus = filterStatus === "all" ? tickets : tickets.filter(t => t.status === filterStatus);
+  const filteredByMerge = filterMerged === "all"
+    ? filteredByStatus
+    : filteredByStatus.filter((t) => (filterMerged === "merged" ? Boolean(t.merged_into_id) : !t.merged_into_id));
+
+  const filtered = filteredByMerge
     .sort((a, b) => {
       const pa = PRIORITY_ORDER[a.priority] ?? 99;
       const pb = PRIORITY_ORDER[b.priority] ?? 99;
@@ -259,6 +288,30 @@ export default function TicketsPage() {
               );
             })}
           </div>
+          <div style={{ padding: "8px 14px", borderBottom: "1px solid #f3f4f6", display: "flex", gap: "6px", background: "#fafafa" }}>
+            {[
+              { key: "all", label: "Todos" },
+              { key: "active", label: "No fusionados" },
+              { key: "merged", label: "Fusionados" },
+            ].map((m) => (
+              <button
+                key={m.key}
+                onClick={() => setFilterMerged(m.key as "all" | "active" | "merged")}
+                style={{
+                  padding: "4px 10px",
+                  borderRadius: "99px",
+                  border: `1px solid ${filterMerged === m.key ? "#a78bfa" : "#e5e7eb"}`,
+                  background: filterMerged === m.key ? "#f5f3ff" : "#fff",
+                  color: filterMerged === m.key ? "#6d28d9" : "#6b7280",
+                  fontSize: "11px",
+                  fontWeight: "600",
+                  cursor: "pointer",
+                }}
+              >
+                {m.label}
+              </button>
+            ))}
+          </div>
 
           {/* KPIs */}
           {!selected && (
@@ -336,6 +389,20 @@ export default function TicketsPage() {
                       }}>
                         <UserPlus size={10} /> Asignar
                       </button>
+                    )}
+                    {!t.merged_into_id && (
+                      <button onClick={e => { e.stopPropagation(); openMergeModal(t); }} style={{
+                        fontSize: "11px", color: "#7c3aed", background: "#f5f3ff",
+                        border: "1px solid #ddd6fe", borderRadius: "99px", padding: "1px 8px",
+                        cursor: "pointer", fontWeight: "600", display: "inline-flex", alignItems: "center", gap: "3px",
+                      }}>
+                        <GitMerge size={10} /> Fusionar
+                      </button>
+                    )}
+                    {t.merged_into_id && (
+                      <span style={{ fontSize: "11px", color: "#6b7280", background: "#f3f4f6", border: "1px solid #e5e7eb", borderRadius: "99px", padding: "1px 8px", fontWeight: "600" }}>
+                        Fusionado
+                      </span>
                     )}
                   </div>
                 </div>
@@ -656,6 +723,49 @@ export default function TicketsPage() {
           onClose={() => setAssignModal({ open: false, ticketId: null, ticketNumber: "", currentAssigneeId: null })}
           onAssigned={handleAssigned}
         />
+      )}
+
+      {/* ── Modal: Fusionar Ticket ─────────────────────────────────────────── */}
+      {mergeModal.open && mergeModal.source && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(15,13,40,0.55)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 60 }}>
+          <div style={{ background: "#fff", borderRadius: "16px", padding: "20px", width: "480px", maxWidth: "92vw", boxShadow: "0 24px 60px rgba(0,0,0,0.2)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
+              <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "800", color: "#1e1b4b" }}>Fusionar ticket</h3>
+              <button onClick={() => setMergeModal({ open: false, source: null, targetId: "", loading: false, error: "" })} style={{ border: "none", background: "none", color: "#9ca3af", cursor: "pointer", fontSize: "18px" }}>x</button>
+            </div>
+            <p style={{ margin: "0 0 10px", fontSize: "12px", color: "#6b7280" }}>
+              Ticket origen: <strong>{mergeModal.source.ticket_number}</strong> - {mergeModal.source.title}
+            </p>
+            <label style={{ fontSize: "12px", color: "#6b7280", fontWeight: "600" }}>Selecciona ticket destino</label>
+            <select
+              value={mergeModal.targetId}
+              onChange={(e) => setMergeModal((prev) => ({ ...prev, targetId: e.target.value }))}
+              style={{ width: "100%", marginTop: "6px", padding: "10px 12px", borderRadius: "8px", border: "1px solid #e5e7eb", fontSize: "13px" }}
+            >
+              <option value="">Seleccionar...</option>
+              {tickets
+                .filter((t) => t.id !== mergeModal.source.id && !t.merged_into_id)
+                .map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.ticket_number} - {t.title}
+                  </option>
+                ))}
+            </select>
+            {mergeModal.error && <p style={{ margin: "10px 0 0", fontSize: "12px", color: "#dc2626" }}>{mergeModal.error}</p>}
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", marginTop: "16px" }}>
+              <button onClick={() => setMergeModal({ open: false, source: null, targetId: "", loading: false, error: "" })} style={{ padding: "8px 12px", border: "1px solid #e5e7eb", borderRadius: "8px", background: "#fff", color: "#6b7280", cursor: "pointer" }}>
+                Cancelar
+              </button>
+              <button
+                onClick={confirmMerge}
+                disabled={!mergeModal.targetId || mergeModal.loading}
+                style={{ padding: "8px 14px", border: "none", borderRadius: "8px", background: !mergeModal.targetId ? "#e5e7eb" : "#7c3aed", color: "#fff", cursor: !mergeModal.targetId ? "default" : "pointer", fontWeight: "700" }}
+              >
+                {mergeModal.loading ? "Fusionando..." : "Confirmar fusion"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Spin animation */}

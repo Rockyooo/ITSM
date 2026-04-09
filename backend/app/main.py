@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends
+﻿from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
@@ -77,11 +77,22 @@ async def run_migrations():
             conn.commit()
         except: pass
         try:
+            conn.execute(text("ALTER TABLE ticket_messages ADD COLUMN IF NOT EXISTS message_type VARCHAR(30) DEFAULT 'comment'"))
+            conn.execute(text("UPDATE ticket_messages SET message_type = 'alert' WHERE is_alert = TRUE AND (message_type IS NULL OR message_type = '')"))
+            conn.execute(text("UPDATE ticket_messages SET message_type = 'comment' WHERE message_type IS NULL OR message_type = ''"))
+            conn.commit()
+        except: pass
+        try:
             conn.execute(text("ALTER TABLE tenants ADD COLUMN IF NOT EXISTS nit VARCHAR(50)"))
             conn.execute(text("ALTER TABLE tenants ADD COLUMN IF NOT EXISTS phone VARCHAR(50)"))
             conn.execute(text("ALTER TABLE tenants ADD COLUMN IF NOT EXISTS contact_email VARCHAR(200)"))
             conn.execute(text("ALTER TABLE tenants ADD COLUMN IF NOT EXISTS address VARCHAR(300)"))
             conn.execute(text("ALTER TABLE tenants ADD COLUMN IF NOT EXISTS logo_url VARCHAR(500)"))
+            conn.commit()
+        except: pass
+        try:
+            conn.execute(text("ALTER TABLE tickets ADD COLUMN IF NOT EXISTS merged_into_id VARCHAR"))
+            conn.execute(text("ALTER TABLE tickets ADD COLUMN IF NOT EXISTS merged_at TIMESTAMP"))
             conn.commit()
         except: pass
         try:

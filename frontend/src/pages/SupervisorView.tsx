@@ -28,6 +28,10 @@ export default function SupervisorView() {
   const [isAlert, setIsAlert]       = useState(false);
   const [sending, setSending]       = useState(false);
   const [error, setError]           = useState("");
+  const [showQuoteModal, setShowQuoteModal] = useState(false);
+  const [quoteDescription, setQuoteDescription] = useState("");
+  const [quoteAmount, setQuoteAmount] = useState("");
+  const [quoteFile, setQuoteFile] = useState<File | null>(null);
 
   useEffect(() => { cargarTickets(); }, []);
 
@@ -56,12 +60,53 @@ export default function SupervisorView() {
         body: newMsg,
         is_internal: true,
         is_alert: isAlert,
+        message_type: isAlert ? "alert" : "comment",
       });
       setNewMsg(""); setIsAlert(false);
       cargarMensajes(selected.id);
     } catch {
       setError("No se pudo enviar el comentario");
     } finally { setSending(false); }
+  };
+
+  const enviarCotizacion = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selected) return;
+    if (!quoteDescription.trim() || !quoteAmount.trim()) {
+      setError("La descripcion y el monto son obligatorios para la cotizacion");
+      return;
+    }
+
+    setSending(true);
+    setError("");
+    try {
+      const body = `Cotizacion\nMonto: ${quoteAmount}\nDetalle: ${quoteDescription}`;
+      const created = await api.post(`/api/v1/tickets/${selected.id}/messages`, {
+        body,
+        is_internal: true,
+        is_alert: false,
+        message_type: "quote",
+      });
+
+      const messageId = created?.data?.id;
+      if (messageId && quoteFile) {
+        const formData = new FormData();
+        formData.append("file", quoteFile);
+        await api.post(`/api/v1/tickets/${selected.id}/messages/${messageId}/attachments`, formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+      }
+
+      setShowQuoteModal(false);
+      setQuoteDescription("");
+      setQuoteAmount("");
+      setQuoteFile(null);
+      await cargarMensajes(selected.id);
+    } catch {
+      setError("No se pudo enviar la cotizacion");
+    } finally {
+      setSending(false);
+    }
   };
 
   const filtered = filterStatus === "all" ? tickets : tickets.filter(t => t.status === filterStatus);
@@ -75,61 +120,21 @@ export default function SupervisorView() {
 
   return (
     <div style={{ display:"flex", height:"100vh", fontFamily:"'DM Sans',-apple-system,sans-serif", background:"#F8F9FC", color:"#111827" }}>
-
-      {/* SIDEBAR */}
-      <aside style={{ width:"220px", background:"#fff", borderRight:"1px solid #E5E7EB", display:"flex", flexDirection:"column", flexShrink:0 }}>
-        <div style={{ padding:"20px 16px 16px", borderBottom:"1px solid #E5E7EB" }}>
-          <div style={{ display:"flex", alignItems:"center", gap:"8px" }}>
-            <div style={{ width:"32px", height:"32px", background:"#059669", borderRadius:"8px", display:"flex", alignItems:"center", justifyContent:"center", color:"#fff", fontWeight:"700", fontSize:"14px" }}>S</div>
-            <div>
-              <div style={{ fontWeight:"700", fontSize:"13px", color:"#111827" }}>Supervisor</div>
-              <div style={{ fontSize:"11px", color:"#6B7280" }}>Vista de seguimiento</div>
-            </div>
-          </div>
-        </div>
-        <div style={{ padding:"16px", flex:1 }}>
-          <div style={{ padding:"10px 12px", borderRadius:"8px", background:"#ECFDF5", color:"#059669", fontSize:"13px", fontWeight:"600", marginBottom:"4px" }}>
-            Mis tickets
-          </div>
-          <div style={{ padding:"10px 12px", borderRadius:"8px", color:"#9CA3AF", fontSize:"13px" }}>
-            Reportes
-          </div>
-        </div>
-        {/* KPIs sidebar */}
-        <div style={{ padding:"12px 16px", borderTop:"1px solid #E5E7EB", borderBottom:"1px solid #E5E7EB" }}>
-          <div style={{ fontSize:"10px", color:"#9CA3AF", fontWeight:"600", textTransform:"uppercase", letterSpacing:"0.05em", marginBottom:"8px" }}>Resumen</div>
-          {kpis.map(k => (
-            <div key={k.label} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"4px" }}>
-              <span style={{ fontSize:"12px", color:"#6B7280" }}>{k.label}</span>
-              <span style={{ fontSize:"13px", fontWeight:"700", color:k.color }}>{k.value}</span>
-            </div>
-          ))}
-        </div>
-        <div style={{ padding:"12px 8px" }}>
-          <div style={{ display:"flex", alignItems:"center", gap:"8px", padding:"8px 10px" }}>
-            <div style={{ width:"28px", height:"28px", borderRadius:"50%", background:"#059669", color:"#fff", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"11px", fontWeight:"700" }}>
-              {user?.email?.[0]?.toUpperCase()}
-            </div>
-            <div style={{ flex:1, overflow:"hidden" }}>
-              <div style={{ fontSize:"12px", fontWeight:"600", color:"#111827", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{user?.full_name}</div>
-              <div style={{ fontSize:"11px", color:"#9CA3AF" }}>Supervisor</div>
-            </div>
-            <button onClick={logout} style={{ background:"none", border:"none", color:"#9CA3AF", cursor:"pointer", fontSize:"16px" }} title="Salir">x</button>
-          </div>
-        </div>
-      </aside>
-
-      {/* MAIN */}
       <main style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
 
         {/* Topbar */}
         <div style={{ background:"#fff", borderBottom:"1px solid #E5E7EB", padding:"0 24px", height:"56px", display:"flex", alignItems:"center", justifyContent:"space-between", flexShrink:0 }}>
           <div>
             <h1 style={{ margin:0, fontSize:"16px", fontWeight:"700" }}>Seguimiento de tickets</h1>
-            <p style={{ margin:0, fontSize:"12px", color:"#9CA3AF" }}>Solo lectura � puedes comentar y generar alertas</p>
+            <p style={{ margin:0, fontSize:"12px", color:"#9CA3AF" }}>Solo lectura - puedes comentar, alertar y crear cotizaciones</p>
           </div>
-          <div style={{ padding:"6px 14px", background:"#ECFDF5", border:"1px solid #A7F3D0", borderRadius:"20px", fontSize:"12px", color:"#059669", fontWeight:"600" }}>
-            Modo supervisor
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <div style={{ padding:"6px 14px", background:"#ECFDF5", border:"1px solid #A7F3D0", borderRadius:"20px", fontSize:"12px", color:"#059669", fontWeight:"600" }}>
+              Modo supervisor
+            </div>
+            <button onClick={logout} style={{ background:"#fff", border:"1px solid #E5E7EB", color:"#6B7280", cursor:"pointer", fontSize:"12px", borderRadius:"8px", padding:"6px 10px" }}>
+              Salir
+            </button>
           </div>
         </div>
 
@@ -219,8 +224,11 @@ export default function SupervisorView() {
                     <div style={{ flex:1 }}>
                       <div style={{ display:"flex", alignItems:"center", gap:"8px", marginBottom:"4px" }}>
                         <span style={{ fontSize:"12px", fontWeight:"600", color:"#111827" }}>
-                          {m.is_alert ? "Alerta supervisor" : m.is_internal ? "Nota interna" : "Tecnico"}
+                          {m.message_type === "quote" ? "Cotizacion" : m.is_alert ? "Alerta supervisor" : m.is_internal ? "Nota interna" : "Tecnico"}
                         </span>
+                        {m.message_type === "quote" && (
+                          <span style={{ fontSize:"11px", background:"#EEF4FF", color:"#1D6AE5", border:"1px solid #BFDBFE", padding:"1px 6px", borderRadius:"4px" }}>QUOTE</span>
+                        )}
                         {m.is_alert && <span style={{ fontSize:"11px", background:"#FEF2F2", color:"#EF4444", border:"1px solid #FECACA", padding:"1px 6px", borderRadius:"4px" }}>ALERTA</span>}
                         <span style={{ fontSize:"11px", color:"#9CA3AF" }}>{new Date(m.created_at).toLocaleString()}</span>
                       </div>
@@ -237,7 +245,7 @@ export default function SupervisorView() {
               {/* Caja comentario supervisor */}
               <div style={{ padding:"16px 24px", borderTop:"1px solid #E5E7EB", background:"#fff" }}>
                 <div style={{ marginBottom:"8px", padding:"8px 12px", background:"#F0FDF4", borderRadius:"8px", fontSize:"12px", color:"#059669", border:"1px solid #A7F3D0" }}>
-                  Como supervisor puedes comentar y generar alertas al equipo tecnico. No puedes cambiar el estado del ticket.
+                  Como supervisor puedes comentar, generar alertas y registrar cotizaciones. No puedes cambiar el estado del ticket.
                 </div>
                 {error && <div style={{ marginBottom:"8px", padding:"8px 12px", background:"#FEF2F2", borderRadius:"8px", fontSize:"12px", color:"#EF4444" }}>{error}</div>}
                 <form onSubmit={enviarComentario}>
@@ -252,12 +260,18 @@ export default function SupervisorView() {
                       <input type="checkbox" checked={isAlert} onChange={e => setIsAlert(e.target.checked)} style={{ accentColor:"#EF4444" }} />
                       Marcar como ALERTA al equipo
                     </label>
-                    <button type="submit" disabled={!newMsg.trim() || sending}
-                      style={{ padding:"8px 20px", border:"none", borderRadius:"8px", fontSize:"13px", fontWeight:"600", cursor: newMsg.trim() ? "pointer" : "default",
-                        background: isAlert ? (newMsg.trim() ? "#EF4444" : "#E5E7EB") : (newMsg.trim() ? "#059669" : "#E5E7EB"),
-                        color: newMsg.trim() ? "#fff" : "#9CA3AF" }}>
-                      {sending ? "Enviando..." : isAlert ? "Enviar alerta" : "Comentar"}
-                    </button>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <button type="button" onClick={() => setShowQuoteModal(true)} disabled={!selected || sending}
+                        style={{ padding:"8px 14px", border:"1px solid #BFDBFE", borderRadius:"8px", fontSize:"12px", fontWeight:"600", cursor:"pointer", background:"#EEF4FF", color:"#1D6AE5" }}>
+                        Nueva cotizacion
+                      </button>
+                      <button type="submit" disabled={!newMsg.trim() || sending}
+                        style={{ padding:"8px 20px", border:"none", borderRadius:"8px", fontSize:"13px", fontWeight:"600", cursor: newMsg.trim() ? "pointer" : "default",
+                          background: isAlert ? (newMsg.trim() ? "#EF4444" : "#E5E7EB") : (newMsg.trim() ? "#059669" : "#E5E7EB"),
+                          color: newMsg.trim() ? "#fff" : "#9CA3AF" }}>
+                        {sending ? "Enviando..." : isAlert ? "Enviar alerta" : "Comentar"}
+                      </button>
+                    </div>
                   </div>
                 </form>
               </div>
@@ -265,6 +279,45 @@ export default function SupervisorView() {
           )}
         </div>
       </main>
+
+      {showQuoteModal && selected && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.45)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:60 }} onClick={() => setShowQuoteModal(false)}>
+          <div style={{ background:"#fff", borderRadius:"14px", width:"100%", maxWidth:"520px", margin:"16px", overflow:"hidden" }} onClick={e => e.stopPropagation()}>
+            <div style={{ padding:"16px 20px", borderBottom:"1px solid #E5E7EB", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+              <div>
+                <h3 style={{ margin:0, fontSize:"16px", fontWeight:"700" }}>Nueva cotizacion</h3>
+                <p style={{ margin:"4px 0 0", fontSize:"12px", color:"#9CA3AF" }}>{selected.ticket_number}</p>
+              </div>
+              <button onClick={() => setShowQuoteModal(false)} style={{ background:"none", border:"none", color:"#9CA3AF", cursor:"pointer", fontSize:"20px" }}>x</button>
+            </div>
+            <form onSubmit={enviarCotizacion} style={{ padding:"16px 20px", display:"flex", flexDirection:"column", gap:"12px" }}>
+              <div>
+                <label style={{ display:"block", fontSize:"11px", fontWeight:"600", color:"#6B7280", textTransform:"uppercase", marginBottom:"6px" }}>Descripcion *</label>
+                <textarea value={quoteDescription} onChange={e => setQuoteDescription(e.target.value)} required
+                  placeholder="Detalle de la cotizacion para el cliente"
+                  style={{ width:"100%", minHeight:"84px", padding:"10px 12px", borderRadius:"8px", border:"1px solid #E5E7EB", fontSize:"13px", boxSizing:"border-box", resize:"vertical", fontFamily:"inherit", outline:"none" }} />
+              </div>
+              <div>
+                <label style={{ display:"block", fontSize:"11px", fontWeight:"600", color:"#6B7280", textTransform:"uppercase", marginBottom:"6px" }}>Monto *</label>
+                <input type="text" value={quoteAmount} onChange={e => setQuoteAmount(e.target.value)} required
+                  placeholder="$ 0.00"
+                  style={{ width:"100%", padding:"10px 12px", borderRadius:"8px", border:"1px solid #E5E7EB", fontSize:"13px", boxSizing:"border-box", fontFamily:"inherit", outline:"none" }} />
+              </div>
+              <div>
+                <label style={{ display:"block", fontSize:"11px", fontWeight:"600", color:"#6B7280", textTransform:"uppercase", marginBottom:"6px" }}>Adjunto PDF (opcional)</label>
+                <input type="file" accept=".pdf" onChange={e => setQuoteFile(e.target.files?.[0] ?? null)}
+                  style={{ width:"100%", padding:"10px", borderRadius:"8px", border:"1px solid #E5E7EB", fontSize:"12px", boxSizing:"border-box" }} />
+              </div>
+              <div style={{ display:"flex", justifyContent:"flex-end", gap:"8px", marginTop:"4px" }}>
+                <button type="button" onClick={() => setShowQuoteModal(false)} style={{ padding:"8px 14px", border:"1px solid #E5E7EB", borderRadius:"8px", background:"#fff", color:"#6B7280", cursor:"pointer" }}>Cancelar</button>
+                <button type="submit" disabled={sending} style={{ padding:"8px 16px", border:"none", borderRadius:"8px", background:"#1D6AE5", color:"#fff", fontWeight:"600", cursor:"pointer" }}>
+                  {sending ? "Enviando..." : "Guardar cotizacion"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

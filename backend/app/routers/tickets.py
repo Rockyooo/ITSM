@@ -4,7 +4,7 @@ from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime
 from app.database import get_db
-from app.models import Ticket, User, TenantUserPermission
+from app.models import Ticket, User, TenantUserPermission, TicketMessage
 from app.routers.auth import get_current_user
 import uuid
 
@@ -26,6 +26,9 @@ class TicketStatusUpdate(BaseModel):
 class TicketAssign(BaseModel):
     assigned_to: str
 
+class TicketMerge(BaseModel):
+    target_ticket_id: str
+
 class TicketResponse(BaseModel):
     id: str
     ticket_number: Optional[str]
@@ -38,6 +41,9 @@ class TicketResponse(BaseModel):
     tenant_id: str
     requester_id: Optional[str]
     assigned_to: Optional[str]
+    merged_into_id: Optional[str] = None
+    merged_into_ticket_number: Optional[str] = None
+    merged_at: Optional[datetime] = None
     assignee_name: Optional[str] = None
     created_at: Optional[datetime]
     updated_at: Optional[datetime]
@@ -61,7 +67,7 @@ def get_accessible_tenant_ids(user: User, db: Session) -> List[str]:
         return [t.id for t in db.query(Tenant).filter_by(is_active=True).all()]
     if user.role == "client":
         return [user.tenant_id]
-    # technician y supervisor ó solo tenants asignados explicitamente
+    # technician y supervisor ù solo tenants asignados explicitamente
     perms = db.query(TenantUserPermission).filter(
         TenantUserPermission.user_id == user.id
     ).all()
@@ -79,6 +85,11 @@ def enrich_ticket(ticket: Ticket, db: Session) -> dict:
         data["assignee_name"] = tech.full_name if tech else None
     else:
         data["assignee_name"] = None
+    if ticket.merged_into_id:
+        merged_target = db.query(Ticket).filter(Ticket.id == ticket.merged_into_id).first()
+        data["merged_into_ticket_number"] = merged_target.ticket_number if merged_target else None
+    else:
+        data["merged_into_ticket_number"] = None
     return data
 
 def generate_ticket_number(db: Session) -> str:
@@ -199,7 +210,7 @@ def assign_ticket(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    # Solo admin y superadmin pueden asignar ó supervisor NO
+    # Solo admin y superadmin pueden asignar ù supervisor NO
     if current_user.role not in GLOBAL_ROLES | {"technician"}:
         raise HTTPException(403, "Sin permisos para asignar tickets")
 
@@ -239,3 +250,68 @@ def close_ticket(
     ticket.status = "closed"
     ticket.updated_at = datetime.utcnow()
     db.commit()
+
+@router.post("/{ticket_id}/merge", response_model=TicketResponse)
+def merge_ticket(
+    ticket_id: str,
+    req: TicketMerge,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if current_user.role not in GLOBAL_ROLES | {"technician"}:
+        raise HTTPException(status_code=403, detail="Sin permisos para fusionar tickets")
+
+    if ticket_id == req.target_ticket_id:
+        raise HTTPException(status_code=400, detail="No puedes fusionar un ticket consigo mismo")
+
+    accessible = get_accessible_tenant_ids(current_user, db)
+    source = db.query(Ticket).filter(
+        Ticket.id == ticket_id,
+        Ticket.tenant_id.in_(accessible)
+    ).first()
+    if not source:
+        raise HTTPException(status_code=404, detail="Ticket origen no encontrado")
+
+    target = db.query(Ticket).filter(
+        Ticket.id == req.target_ticket_id,
+        Ticket.tenant_id.in_(accessible)
+    ).first()
+    if not target:
+        raise HTTPException(status_code=404, detail="Ticket destino no encontrado")
+
+    if source.tenant_id != target.tenant_id:
+        raise HTTPException(status_code=400, detail="Solo puedes fusionar tickets de la misma empresa")
+    if source.merged_into_id:
+        raise HTTPException(status_code=400, detail="El ticket origen ya fue fusionado")
+    if target.merged_into_id:
+        raise HTTPException(status_code=400, detail="El ticket destino ya fue fusionado a otro ticket")
+
+    now = datetime.utcnow()
+    source.status = "closed"
+    source.updated_at = now
+    source.resolved_at = now
+    source.merged_into_id = target.id
+    source.merged_at = now
+
+    db.add(TicketMessage(
+        id=str(uuid.uuid4()),
+        ticket_id=source.id,
+        author_id=current_user.id,
+        body=f"Ticket fusionado en {target.ticket_number}.",
+        is_internal=True,
+        message_type="merge",
+        created_at=now,
+    ))
+    db.add(TicketMessage(
+        id=str(uuid.uuid4()),
+        ticket_id=target.id,
+        author_id=current_user.id,
+        body=f"Se fusiono {source.ticket_number} en este ticket.",
+        is_internal=True,
+        message_type="merge",
+        created_at=now,
+    ))
+
+    db.commit()
+    db.refresh(source)
+    return enrich_ticket(source, db)

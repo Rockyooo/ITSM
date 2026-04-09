@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Lock, Paperclip, Send, Unlock } from "lucide-react";
+import { ArrowLeft, GitMerge, Lock, Paperclip, Send, Unlock } from "lucide-react";
 import { api } from "../lib/api";
 import { useAuthStore } from "../store/auth";
 
@@ -14,6 +14,9 @@ type Ticket = {
   ticket_type: string;
   category?: string;
   assignee_name?: string;
+  merged_into_id?: string;
+  merged_into_ticket_number?: string;
+  merged_at?: string;
   created_at: string;
 };
 
@@ -21,6 +24,7 @@ type Message = {
   id: string;
   author_id?: string;
   body: string;
+  message_type?: string;
   is_internal: boolean;
   created_at: string;
 };
@@ -186,6 +190,7 @@ export default function TicketDetail() {
 
   const sc = STATUS_CONFIG[ticket.status] || STATUS_CONFIG.open;
   const pc = PRIORITY_CONFIG[ticket.priority] || PRIORITY_CONFIG.medium;
+  const isMergedOrigin = Boolean(ticket.merged_into_id);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "#f8fafc" }}>
@@ -239,7 +244,7 @@ export default function TicketDetail() {
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 260px", flex: 1, overflow: "hidden" }}>
         <div style={{ display: "flex", flexDirection: "column", overflow: "hidden", borderRight: "1px solid #f1f5f9" }}>
-          {NEXT_STATUS[ticket.status]?.length > 0 && (
+          {NEXT_STATUS[ticket.status]?.length > 0 && !isMergedOrigin && (
             <div style={{ padding: "8px 16px", borderBottom: "1px solid #f8fafc", background: "#fff", display: "flex", alignItems: "center", gap: "6px", flexShrink: 0 }}>
               <span style={{ fontSize: "10px", color: "#94a3b8", fontWeight: "700", textTransform: "uppercase" }}>Cambiar:</span>
               {NEXT_STATUS[ticket.status].map((s) => (
@@ -254,6 +259,18 @@ export default function TicketDetail() {
             </div>
           )}
 
+          {isMergedOrigin && (
+            <div style={{ margin: "12px 16px 0", padding: "10px 12px", borderRadius: "10px", border: "1px solid #ddd6fe", background: "#f5f3ff", color: "#5b21b6", fontSize: "12px" }}>
+              Este ticket fue fusionado en {ticket.merged_into_ticket_number || "otro ticket"} y quedo en modo solo lectura.
+              <button
+                onClick={() => navigate(`/ticket/${ticket.merged_into_id}`)}
+                style={{ marginLeft: "8px", background: "#ede9fe", border: "1px solid #c4b5fd", color: "#5b21b6", borderRadius: "6px", padding: "4px 8px", fontSize: "11px", cursor: "pointer", fontWeight: "600" }}
+              >
+                Ir a {ticket.merged_into_ticket_number || "ticket destino"}
+              </button>
+            </div>
+          )}
+
           <div style={{ flex: 1, overflowY: "auto", padding: "16px", display: "flex", flexDirection: "column", gap: "10px" }}>
             {ticket.description && (
               <div style={{ background: "#f1f5f9", borderRadius: "10px", padding: "12px 14px", fontSize: "12px", color: "#475569" }}>
@@ -265,6 +282,15 @@ export default function TicketDetail() {
             {messages.map((m) => {
               const mine = m.author_id === user?.id;
               const messageAttachments = attachmentsByMessage[m.id] || [];
+              if (m.message_type === "merge") {
+                return (
+                  <div key={m.id} style={{ display: "flex", justifyContent: "center" }}>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "11px", background: "#ede9fe", border: "1px solid #c4b5fd", color: "#6d28d9", padding: "5px 10px", borderRadius: "99px", fontWeight: "600" }}>
+                      <GitMerge size={12} /> Evento de fusion - {m.body}
+                    </span>
+                  </div>
+                );
+              }
 
               if (m.is_internal) {
                 return (
@@ -314,7 +340,7 @@ export default function TicketDetail() {
             {messages.length === 0 && <div style={{ textAlign: "center", padding: "40px", color: "#94a3b8", fontSize: "13px" }}>Sin mensajes aun.</div>}
           </div>
 
-          <div style={{ padding: "10px 14px", borderTop: "1px solid #f1f5f9", background: "#fff", flexShrink: 0 }}>
+          <div style={{ padding: "10px 14px", borderTop: "1px solid #f1f5f9", background: "#fff", flexShrink: 0, opacity: isMergedOrigin ? 0.65 : 1 }}>
             <div style={{ display: "flex", gap: "6px", alignItems: "flex-end", background: "#f8fafc", borderRadius: "10px", border: "1.5px solid #e2e8f0", padding: "7px 10px" }}>
               <textarea
                 value={newMsg}
@@ -326,6 +352,7 @@ export default function TicketDetail() {
                   }
                 }}
                 placeholder={isInternal ? "Nota interna..." : "Escribe... (Enter envia)"}
+                disabled={isMergedOrigin}
                 style={{ flex: 1, background: "transparent", border: "none", outline: "none", resize: "none", fontSize: "13px", color: "#374151", minHeight: "32px", maxHeight: "100px", fontFamily: "inherit", lineHeight: "1.4" }}
                 rows={1}
               />
@@ -335,16 +362,17 @@ export default function TicketDetail() {
                   <input
                     type="file"
                     multiple
+                    disabled={isMergedOrigin}
                     style={{ display: "none" }}
                     onChange={(e) => setSelectedFiles(Array.from(e.target.files || []))}
                   />
                 </label>
-                <button onClick={() => setIsInternal(!isInternal)} style={{ background: "none", border: "none", cursor: "pointer", color: isInternal ? "#f59e0b" : "#94a3b8", padding: "3px" }}>
+                <button disabled={isMergedOrigin} onClick={() => setIsInternal(!isInternal)} style={{ background: "none", border: "none", cursor: "pointer", color: isInternal ? "#f59e0b" : "#94a3b8", padding: "3px" }}>
                   {isInternal ? <Lock size={15} /> : <Unlock size={15} />}
                 </button>
                 <button
                   onClick={() => void sendMessage()}
-                  disabled={(newMsg.trim().length === 0 && selectedFiles.length === 0) || sending}
+                  disabled={isMergedOrigin || (newMsg.trim().length === 0 && selectedFiles.length === 0) || sending}
                   style={{ width: "30px", height: "30px", borderRadius: "7px", border: "none", cursor: newMsg.trim() || selectedFiles.length > 0 ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", background: newMsg.trim() || selectedFiles.length > 0 ? "linear-gradient(135deg,#4f46e5,#7c3aed)" : "#e2e8f0", color: "#fff" }}
                 >
                   <Send size={13} />
@@ -367,18 +395,19 @@ export default function TicketDetail() {
                 <div style={{ width: "28px", height: "28px", borderRadius: "50%", background: "#e0e7ff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px", fontWeight: "700", color: "#4338ca" }}>{ticket.assignee_name.charAt(0).toUpperCase()}</div>
                 <div>
                   <p style={{ margin: 0, fontSize: "12px", fontWeight: "600", color: "#0f172a" }}>{ticket.assignee_name}</p>
-                  <button onClick={() => setShowAssign(!showAssign)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: "10px", color: "#4f46e5", padding: 0 }}>Cambiar</button>
+                  <button disabled={isMergedOrigin} onClick={() => setShowAssign(!showAssign)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: "10px", color: "#4f46e5", padding: 0 }}>Cambiar</button>
                 </div>
               </div>
             ) : (
               <button
+                disabled={isMergedOrigin}
                 onClick={() => setShowAssign(!showAssign)}
                 style={{ width: "100%", padding: "7px", borderRadius: "7px", border: "1.5px dashed #c7d2fe", background: "#f5f3ff", color: "#4f46e5", fontSize: "11px", fontWeight: "600", cursor: "pointer" }}
               >
                 + Asignar tecnico
               </button>
             )}
-            {showAssign && (
+            {showAssign && !isMergedOrigin && (
               <div style={{ marginTop: "6px", display: "flex", flexDirection: "column", gap: "3px", maxHeight: "140px", overflowY: "auto" }}>
                 {technicians.map((t) => (
                   <button
@@ -402,6 +431,7 @@ export default function TicketDetail() {
                 { label: "Prioridad", value: pc.label, color: pc.color },
                 { label: "Categoria", value: ticket.category || "-" },
                 { label: "Mensajes", value: String(messages.length) },
+                { label: "Fusionado en", value: ticket.merged_into_ticket_number || "-" },
                 { label: "Creado", value: new Date(ticket.created_at).toLocaleDateString("es-CO", { day: "numeric", month: "short", year: "numeric" }) },
               ].map((item) => (
                 <div key={item.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>

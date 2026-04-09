@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
 import { api } from "../lib/api";
 import { useAuthStore } from "../store/auth";
 
@@ -15,9 +14,7 @@ interface Usuario { id: string; full_name: string; email: string; role: string; 
 interface FormData { full_name: string; email: string; password: string; role: string; phone: string; position: string; tenant_id: string; is_active: boolean; }
 const FORM_INICIAL: FormData = { full_name: "", email: "", password: "", role: "technician", phone: "", position: "", tenant_id: "", is_active: true };
 export default function Usuarios() {
-  const { user, fetchMe, logout } = useAuthStore();
-  const navigate = useNavigate();
-  const location = useLocation();
+  const { user, fetchMe } = useAuthStore();
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [tenants, setTenants] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -74,8 +71,8 @@ export default function Usuarios() {
     { label: "Supervisores", value: usuarios.filter(u => u.role === "supervisor").length, color: "#7C3AED" },
   ];
   return (
-    <div style={{ display: "flex", height: "100vh", backgroundColor: "#F9FAFB", fontFamily: "sans-serif" }}>
-      <main style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
+    <div style={{ display: "flex", backgroundColor: "#F9FAFB", fontFamily: "sans-serif" }}>
+      <main style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden", minHeight: "calc(100vh - 8px)" }}>
         <div style={{ background:"#fff", borderBottom:"1px solid #E5E7EB", padding:"0 24px", height:"56px", display:"flex", alignItems:"center", justifyContent:"space-between", flexShrink:0 }}>
           <div><h1 style={{ margin:0, fontSize:"16px", fontWeight:"700" }}>Usuarios</h1><p style={{ margin:0, fontSize:"12px", color:"#9CA3AF" }}>{usuarios.length} usuarios registrados</p></div>
           <button onClick={abrirCrear} style={{ padding:"8px 16px", background:"#1D6AE5", color:"#fff", border:"none", borderRadius:"8px", cursor:"pointer", fontSize:"13px", fontWeight:"600" }}>+ Nuevo usuario</button>
