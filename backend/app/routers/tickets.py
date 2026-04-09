@@ -211,10 +211,23 @@ def update_status(
     if req.status not in allowed:
         raise HTTPException(status_code=400,
             detail=f"Transicion invalida: {ticket.status} -> {req.status}. Permitidas: {allowed}")
+    if req.status != ticket.status:
+        db.add(TicketMessage(
+            id=str(uuid.uuid4()),
+            ticket_id=ticket.id,
+            author_id=current_user.id,
+            body=f"El estado cambio a {req.status.upper()}",
+            message_type="alert",
+            is_internal=False,
+            is_alert=True,
+            created_at=datetime.utcnow()
+        ))
+    
     ticket.status = req.status
     ticket.updated_at = datetime.utcnow()
     if req.status == "resolved":
         ticket.resolved_at = datetime.utcnow()
+        
     db.commit()
     db.refresh(ticket)
     return enrich_ticket(ticket, db)
@@ -241,6 +254,18 @@ def assign_ticket(
     tecnico = db.query(User).filter(User.id == req.assigned_to).first()
     if not tecnico:
         raise HTTPException(404, "Tecnico no encontrado")
+
+    if ticket.assigned_to != req.assigned_to:
+        db.add(TicketMessage(
+            id=str(uuid.uuid4()),
+            ticket_id=ticket.id,
+            author_id=current_user.id,
+            body=f"Ticket asignado a {tecnico.full_name}",
+            message_type="alert",
+            is_internal=False,
+            is_alert=True,
+            created_at=datetime.utcnow()
+        ))
 
     ticket.assigned_to = req.assigned_to
     if ticket.status == "open":

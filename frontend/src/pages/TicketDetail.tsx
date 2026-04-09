@@ -23,6 +23,7 @@ type Ticket = {
 type Message = {
   id: string;
   author_id?: string;
+  author_name?: string;
   body: string;
   message_type?: string;
   is_internal: boolean;
@@ -281,12 +282,25 @@ export default function TicketDetail() {
 
             {messages.map((m) => {
               const mine = m.author_id === user?.id;
+              const displayAuthor = mine ? "Tu" : (m.author_name || "Usuario");
               const messageAttachments = attachmentsByMessage[m.id] || [];
+              const timeString = new Date(m.created_at).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" });
+
               if (m.message_type === "merge") {
                 return (
-                  <div key={m.id} style={{ display: "flex", justifyContent: "center" }}>
-                    <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "11px", background: "#ede9fe", border: "1px solid #c4b5fd", color: "#6d28d9", padding: "5px 10px", borderRadius: "99px", fontWeight: "600" }}>
+                  <div key={m.id} style={{ display: "flex", justifyContent: "center", margin: "10px 0" }}>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "11px", background: "#ede9fe", border: "1px solid #c4b5fd", color: "#6d28d9", padding: "5px 10px", borderRadius: "99px", fontWeight: "600", boxShadow: "0 1px 2px rgba(109, 40, 217, 0.1)" }}>
                       <GitMerge size={12} /> Evento de fusion - {m.body}
+                    </span>
+                  </div>
+                );
+              }
+
+              if (m.message_type === "alert" || m.is_alert) {
+                return (
+                  <div key={m.id} style={{ display: "flex", justifyContent: "center", margin: "10px 0" }}>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "11px", background: "#f1f5f9", border: "1px solid #e2e8f0", color: "#475569", padding: "5px 12px", borderRadius: "99px", fontWeight: "600", boxShadow: "0 1px 2px rgba(0,0,0,0.05)" }}>
+                      <span style={{ color: "#ef4444" }}>🔴</span> {timeString} - {m.body}
                     </span>
                   </div>
                 );
@@ -294,45 +308,68 @@ export default function TicketDetail() {
 
               if (m.is_internal) {
                 return (
-                  <div key={m.id} style={{ display: "flex", justifyContent: "center" }}>
+                  <div key={m.id} style={{ display: "flex", justifyContent: "center", margin: "10px 0" }}>
                     <span style={{ fontSize: "10px", background: "#fffbeb", border: "1px solid #fde68a", color: "#92400e", padding: "3px 10px", borderRadius: "99px" }}>
-                      Nota interna {new Date(m.created_at).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })}
+                      Nota interna {timeString}
                     </span>
                   </div>
                 );
               }
 
               return (
-                <div key={m.id} style={{ display: "flex", justifyContent: mine ? "flex-end" : "flex-start", gap: "6px", alignItems: "flex-end" }}>
-                  <div style={{ maxWidth: "70%" }}>
+                <div key={m.id} style={{ display: "flex", justifyContent: mine ? "flex-end" : "flex-start", gap: "10px", alignItems: "flex-end", marginBottom: "8px" }}>
+                  {!mine && (
+                    <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: "#e0e7ff", color: "#4338ca", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "700", fontSize: "13px", flexShrink: 0, boxShadow: "0 2px 4px rgba(0,0,0,0.05)" }}>
+                      {displayAuthor.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+
+                  <div style={{ maxWidth: "72%", display: "flex", flexDirection: "column", alignItems: mine ? "flex-end" : "flex-start" }}>
+                    <span style={{ fontSize: "10px", color: "#64748b", marginBottom: "4px", padding: "0 2px", fontWeight: "500" }}>
+                      {timeString} - {displayAuthor}
+                    </span>
                     <div
                       style={{
-                        padding: "9px 13px",
-                        borderRadius: mine ? "14px 14px 3px 14px" : "14px 14px 14px 3px",
+                        padding: "11px 15px",
+                        borderRadius: mine ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
                         fontSize: "13px",
                         lineHeight: "1.5",
                         background: mine ? "linear-gradient(135deg,#4f46e5,#7c3aed)" : "#fff",
-                        color: mine ? "#fff" : "#374151",
+                        color: mine ? "#fff" : "#334155",
                         border: mine ? "none" : "1px solid #f1f5f9",
-                        boxShadow: mine ? "0 2px 8px rgba(79,70,229,0.25)" : "0 1px 2px rgba(0,0,0,0.05)",
+                        boxShadow: mine ? "0 4px 12px rgba(79,70,229,0.2)" : "0 2px 6px rgba(0,0,0,0.04)",
                       }}
                     >
                       {m.body}
+                      
                       {messageAttachments.length > 0 && (
-                        <div style={{ marginTop: "8px", display: "flex", flexDirection: "column", gap: "4px" }}>
-                          {messageAttachments.map((a) => (
-                            <a key={a.id} href={a.file_url} target="_blank" rel="noreferrer" style={{ fontSize: "11px", textDecoration: "none", color: mine ? "#dbeafe" : "#4f46e5" }}>
-                              <Paperclip size={11} style={{ verticalAlign: "text-bottom", marginRight: "4px" }} />
-                              {a.filename}
-                            </a>
-                          ))}
+                        <div style={{ marginTop: "10px", display: "flex", flexDirection: "column", gap: "6px" }}>
+                          {messageAttachments.map((a) => {
+                            const isImage = a.content_type?.startsWith("image/") || a.filename.match(/\.(jpeg|jpg|gif|png|webp|bmp)$/i);
+                            if (isImage) {
+                              return (
+                                <a key={a.id} href={a.file_url} target="_blank" rel="noreferrer" style={{ display: "block", borderRadius: "10px", overflow: "hidden", border: mine ? "1px solid rgba(255,255,255,0.2)" : "1px solid #e2e8f0", maxWidth: "240px", background: "#f8fafc", boxShadow: "0 2px 4px rgba(0,0,0,0.05)" }}>
+                                  <img src={a.file_url} alt={a.filename} style={{ display: "block", width: "100%", height: "auto", objectFit: "cover" }} />
+                                </a>
+                              );
+                            }
+                            return (
+                              <a key={a.id} href={a.file_url} target="_blank" rel="noreferrer" style={{ fontSize: "11px", textDecoration: "none", color: mine ? "#fff" : "#4b5563", display: "flex", alignItems: "center", background: mine ? "rgba(255,255,255,0.15)" : "#f8fafc", border: mine ? "1px solid rgba(255,255,255,0.2)" : "1px solid #e2e8f0", padding: "6px 10px", borderRadius: "8px", fontWeight: "500", transition: "all 0.2s" }}>
+                                <Paperclip size={13} style={{ marginRight: "6px", flexShrink: 0, opacity: 0.8 }} />
+                                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "160px" }}>{a.filename}</span>
+                              </a>
+                            );
+                          })}
                         </div>
                       )}
                     </div>
-                    <p style={{ margin: "2px 4px 0", fontSize: "10px", color: "#94a3b8", textAlign: mine ? "right" : "left" }}>
-                      {new Date(m.created_at).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })}
-                    </p>
                   </div>
+
+                  {mine && (
+                    <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: "#4f46e5", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "700", fontSize: "13px", flexShrink: 0, boxShadow: "0 2px 6px rgba(79,70,229,0.3)" }}>
+                      T
+                    </div>
+                  )}
                 </div>
               );
             })}

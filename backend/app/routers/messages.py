@@ -21,6 +21,7 @@ class MessageResponse(BaseModel):
     id: str
     ticket_id: str
     author_id: Optional[str]
+    author_name: Optional[str] = None
     body: str
     message_type: str
     is_internal: bool
@@ -29,6 +30,15 @@ class MessageResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+def enrich_message(msg: TicketMessage, db: Session) -> dict:
+    data = {c.name: getattr(msg, c.name) for c in msg.__table__.columns}
+    if msg.author_id:
+        author = db.query(User).filter(User.id == msg.author_id).first()
+        data["author_name"] = author.full_name if author else "Desconocido"
+    else:
+        data["author_name"] = "Sistema"
+    return data
 
 @router.post("/{ticket_id}/messages", status_code=201, response_model=MessageResponse)
 def add_message(
@@ -74,7 +84,7 @@ def add_message(
             email_body = f"<p><b>{current_user.full_name}</b> añadió un comentario:</p><blockquote>{req.body}</blockquote><p><br>Por favor responde ingresando al portal.</p>"
             background_tasks.add_task(send_graph_email, requester.email, f"Re: {ticket.title}", email_body, ticket.ticket_number, True)
 
-    return msg
+    return enrich_message(msg, db)
 
 @router.get("/{ticket_id}/messages", response_model=list[MessageResponse])
 def list_messages(
@@ -88,6 +98,7 @@ def list_messages(
     ).first()
     if not ticket:
         raise HTTPException(status_code=404, detail="Ticket no encontrado")
-    return db.query(TicketMessage).filter(
+    msgs = db.query(TicketMessage).filter(
         TicketMessage.ticket_id == ticket_id
     ).order_by(TicketMessage.created_at.asc()).all()
+    return [enrich_message(m, db) for m in msgs]
