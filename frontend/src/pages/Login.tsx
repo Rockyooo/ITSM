@@ -134,7 +134,7 @@ export default function Login() {
                 </label>
                 <input
                   type="email" value={email} onChange={e => setEmail(e.target.value)}
-                  placeholder="usuario@empresa.com" required
+                  placeholder="usuario@empresa.com" required autoComplete="email" autoComplete="email"
                   style={inputStyle}
                   onFocus={e => e.target.style.borderColor = BRANDING.primaryColor}
                   onBlur={e => e.target.style.borderColor = "#334155"}
@@ -147,7 +147,7 @@ export default function Login() {
                   Contrasena
                 </label>
                 <input
-                  type="password" value={password} onChange={e => setPassword(e.target.value)}
+                  type="password" autoComplete="current-password" value={password} onChange={e => setPassword(e.target.value)}
                   placeholder="��������" required
                   style={inputStyle}
                   onFocus={e => e.target.style.borderColor = BRANDING.primaryColor}
@@ -188,7 +188,7 @@ export default function Login() {
 
           {/* Footer */}
           <div style={{ textAlign:"center", marginTop:"32px", fontSize:"11px", color:"#334155" }}>
-            {BRANDING.appName} � Mesa de soporte TI
+            {BRANDING.appName} · Mesa de soporte TI
           </div>
         </div>
       </div>
