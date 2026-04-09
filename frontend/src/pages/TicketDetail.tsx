@@ -27,6 +27,7 @@ type Message = {
   body: string;
   message_type?: string;
   is_internal: boolean;
+  is_alert?: boolean;
   created_at: string;
 };
 

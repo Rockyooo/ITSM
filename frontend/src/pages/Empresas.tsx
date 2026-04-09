@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { api } from "../lib/api";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store/auth";
+import { Building2, Users, Ticket, Mail, Phone, UploadCloud, Edit3, PowerOff, CheckCircle2, Globe, FileSpreadsheet } from "lucide-react";
 
 interface Tenant {
   id: string; name: string; slug: string; domain: string;
@@ -93,37 +94,93 @@ export default function Empresas() {
           <p style={{ color:"#6B7280", fontSize:"14px", margin:0 }}>Sin empresas registradas</p>
         </div>
       ) : (
-        <div style={{ display:"flex", flexDirection:"column", gap:"8px" }}>
+        <div style={{ display:"grid", gridTemplateColumns: "repeat(auto-fill, minmax(380px, 1fr))", gap:"16px" }}>
           {empresas.map(t => (
-            <div key={t.id} style={{ background:"#fff", borderRadius:"12px", border:"1px solid #E5E7EB", padding:"16px 20px", display:"flex", alignItems:"center", gap:"16px", opacity: t.is_active ? 1 : 0.6 }}>
-              <div style={{ width:"44px", height:"44px", borderRadius:"10px", background: t.is_active ? "#EEF4FF" : "#F3F4F6", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:"700", fontSize:"16px", color: t.is_active ? "#1D6AE5" : "#9CA3AF", flexShrink:0 }}>
-                {t.name[0].toUpperCase()}
-              </div>
-              <div style={{ flex:1, minWidth:0 }}>
-                <div style={{ display:"flex", alignItems:"center", gap:"8px", marginBottom:"4px" }}>
-                  <span style={{ fontWeight:"600", fontSize:"14px" }}>{t.name}</span>
-                  <span style={{ fontSize:"11px", padding:"1px 8px", borderRadius:"99px", background: t.is_active ? "#ECFDF5" : "#F3F4F6", color: t.is_active ? "#059669" : "#9CA3AF" }}>
-                    {t.is_active ? "Activa" : "Inactiva"}
-                  </span>
+            <div 
+              key={t.id} 
+              style={{ 
+                background:"#fff", 
+                borderRadius:"16px", 
+                border:"1px solid #f1f5f9", 
+                padding:"20px", 
+                display:"flex", 
+                flexDirection: "column",
+                gap:"16px", 
+                opacity: t.is_active ? 1 : 0.6,
+                boxShadow: "0 2px 10px rgba(0,0,0,0.02)",
+                transition: "all 0.2s ease"
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 12px 24px rgba(79,70,229,0.08)'; e.currentTarget.style.borderColor = '#e0e7ff'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 2px 10px rgba(0,0,0,0.02)'; e.currentTarget.style.borderColor = '#f1f5f9'; }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+                <div style={{ width:"50px", height:"50px", borderRadius:"12px", background: t.is_active ? "linear-gradient(135deg, #4f46e5, #7c3aed)" : "#f1f5f9", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:"800", fontSize:"20px", color: t.is_active ? "#fff" : "#94a3b8", flexShrink:0, boxShadow: t.is_active ? "0 4px 10px rgba(79,70,229,0.3)" : "none" }}>
+                  {t.name[0].toUpperCase()}
                 </div>
-                <div style={{ display:"flex", gap:"16px", fontSize:"12px", color:"#6B7280", flexWrap:"wrap" }}>
-                  <span>@{t.domain}</span>
-                  {t.nit && <span>NIT: {t.nit}</span>}
-                  {t.phone && <span>{t.phone}</span>}
-                  <span>{t.total_users} usuarios</span>
-                  <span>{t.total_tickets} tickets</span>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:"8px", marginBottom:"4px" }}>
+                    <span style={{ fontWeight:"700", fontSize:"15px", color: "#0f172a" }}>{t.name}</span>
+                    <span style={{ fontSize:"10px", padding:"2px 8px", borderRadius:"99px", background: t.is_active ? "#ecfdf5" : "#f1f5f9", color: t.is_active ? "#059669" : "#64748b", fontWeight: "600", display: "flex", alignItems: "center", gap: "3px" }}>
+                      {t.is_active ? <><CheckCircle2 size={10} /> Activa</> : "Inactiva"}
+                    </span>
+                  </div>
+                  <div style={{ display:"flex", alignItems: "center", gap:"6px", fontSize:"12px", color:"#64748b" }}>
+                    <Globe size={12} /> {t.domain}
+                  </div>
                 </div>
               </div>
-              <div style={{ display:"flex", gap:"8px", flexShrink:0, flexWrap:"wrap", justifyContent:"flex-end" }}>
-                <label style={{ padding:"6px 14px", fontSize:"12px", color:"#059669", background:"#ECFDF5", border:"1px solid #A7F3D0", borderRadius:"6px", cursor:"pointer", display:"inline-block" }}>
-                  {importing === t.id ? "Importando..." : "Importar Excel"}
+
+              <div style={{ display: "flex", background: "#f8fafc", borderRadius: "10px", padding: "10px", gap: "12px", border: "1px solid #f1f5f9" }}>
+                <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "2px" }}>
+                  <span style={{ fontSize: "10px", color: "#94a3b8", fontWeight: "600", textTransform: "uppercase" }}>Usuarios</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "13px", fontWeight: "600", color: "#334155" }}><Users size={14} color="#6366f1" /> {t.total_users}</div>
+                </div>
+                <div style={{ width: "1px", background: "#e2e8f0" }}></div>
+                <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "2px" }}>
+                  <span style={{ fontSize: "10px", color: "#94a3b8", fontWeight: "600", textTransform: "uppercase" }}>Tickets</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "13px", fontWeight: "600", color: "#334155" }}><Ticket size={14} color="#ec4899" /> {t.total_tickets}</div>
+                </div>
+                {t.nit && (
+                  <>
+                    <div style={{ width: "1px", background: "#e2e8f0" }}></div>
+                    <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "2px" }}>
+                      <span style={{ fontSize: "10px", color: "#94a3b8", fontWeight: "600", textTransform: "uppercase" }}>NIT</span>
+                      <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "12px", fontWeight: "600", color: "#334155" }}>{t.nit}</div>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              <div style={{ display:"flex", gap:"8px", marginTop: "auto" }}>
+                <label style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", padding:"8px", fontSize:"12px", color:"#4f46e5", background:"#e0e7ff", borderRadius:"8px", cursor:"pointer", transition: "all 0.2s", fontWeight: "600" }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = '#c7d2fe'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = '#e0e7ff'; }}
+                >
+                  <FileSpreadsheet size={14} />
+                  {importing === t.id ? "..." : "Importar"}
                   <input type="file" accept=".xlsx,.xls" style={{ display:"none" }}
                     onChange={e => { if (e.target.files?.[0]) importarExcel(t.id, e.target.files[0]); (e.target as HTMLInputElement).value = ""; }} />
                 </label>
-                <button onClick={() => abrirEditar(t)} style={{ padding:"6px 14px", fontSize:"12px", color:"#1D6AE5", background:"#EEF4FF", border:"1px solid #BFDBFE", borderRadius:"6px", cursor:"pointer" }}>Editar</button>
+
+                <button 
+                  onClick={() => abrirEditar(t)} 
+                  style={{ width: "34px", height: "34px", display: "flex", alignItems: "center", justifyContent: "center", color:"#475569", background:"transparent", border:"1px solid #e2e8f0", borderRadius:"8px", cursor:"pointer", transition: "all 0.2s" }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.color = '#0f172a'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#475569'; }}
+                  title="Editar Empresa"
+                >
+                  <Edit3 size={15} />
+                </button>
+
                 {isSuperadmin && (
-                  <button onClick={() => toggleActivo(t)} style={{ padding:"6px 14px", fontSize:"12px", color: t.is_active ? "#EF4444" : "#059669", background: t.is_active ? "#FEF2F2" : "#ECFDF5", border:`1px solid ${t.is_active ? "#FECACA" : "#A7F3D0"}`, borderRadius:"6px", cursor:"pointer" }}>
-                    {t.is_active ? "Desactivar" : "Activar"}
+                  <button 
+                    onClick={() => toggleActivo(t)} 
+                    style={{ width: "34px", height: "34px", display: "flex", alignItems: "center", justifyContent: "center", color: t.is_active ? "#ef4444" : "#10b981", background: t.is_active ? "#fef2f2" : "#f0fdf4", border:`1px solid ${t.is_active ? "#fecaca" : "#a7f3d0"}`, borderRadius:"8px", cursor:"pointer", transition: "all 0.2s" }}
+                    onMouseEnter={(e) => { e.currentTarget.style.filter = 'brightness(0.95)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.filter = 'none'; }}
+                    title={t.is_active ? "Desactivar Empresa" : "Activar Empresa"}
+                  >
+                    <PowerOff size={15} />
                   </button>
                 )}
               </div>
