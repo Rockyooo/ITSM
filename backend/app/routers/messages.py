@@ -1,4 +1,4 @@
-﻿from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Optional
@@ -6,6 +6,7 @@ from datetime import datetime
 from app.database import get_db
 from app.models import Ticket, TicketMessage, User
 from app.routers.auth import get_current_user
+from app.services.graph_email import send_graph_email
 import uuid
 
 router = APIRouter(prefix="/api/v1/tickets", tags=["messages"])
@@ -33,6 +34,7 @@ class MessageResponse(BaseModel):
 def add_message(
     ticket_id: str,
     req: MessageCreate,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -65,6 +67,13 @@ def add_message(
         ticket.updated_at = datetime.utcnow()
     db.commit()
     db.refresh(msg)
+    
+    if not req.is_internal:
+        requester = db.query(User).filter(User.id == ticket.requester_id).first()
+        if requester and requester.id != current_user.id:
+            email_body = f"<p><b>{current_user.full_name}</b> añadió un comentario:</p><blockquote>{req.body}</blockquote><p><br>Por favor responde ingresando al portal.</p>"
+            background_tasks.add_task(send_graph_email, requester.email, f"Re: {ticket.title}", email_body, ticket.ticket_number, True)
+
     return msg
 
 @router.get("/{ticket_id}/messages", response_model=list[MessageResponse])

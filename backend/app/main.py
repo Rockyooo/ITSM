@@ -1,11 +1,21 @@
-﻿from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 from sqlalchemy import text
-from app.routers import auth, tickets, messages, attachments, users, public, permissions, tenants, import_users
+from app.routers import auth, tickets, messages, attachments, users, public, permissions, tenants, import_users, assets
 from app.database import get_db
 import os, pathlib
+import sentry_sdk
+from dotenv import load_dotenv
+
+load_dotenv()
+
+if os.getenv("SENTRY_DSN"):
+    sentry_sdk.init(
+        dsn=os.getenv("SENTRY_DSN"),
+        traces_sample_rate=1.0,
+    )
 
 app = FastAPI(title="ITSM Fusion I.T.", version="1.0.0")
 
@@ -38,6 +48,7 @@ app.include_router(public.router)
 app.include_router(permissions.router)
 app.include_router(tenants.router)
 app.include_router(import_users.router)
+app.include_router(assets.router)
 
 @app.on_event("startup")
 async def run_migrations():

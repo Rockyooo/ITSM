@@ -38,6 +38,7 @@ export function Sidebar() {
     menuItems.push(
       { name: 'Empresas', icon: Building2, path: '/empresas' },
       { name: 'Usuarios', icon: Users, path: '/usuarios' },
+      { name: 'Activos', icon: Zap, path: '/inventario' },
       { name: 'Permisos', icon: Settings, path: '/permisos' }
     );
   }

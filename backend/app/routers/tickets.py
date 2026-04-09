@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Optional, List
@@ -6,6 +6,7 @@ from datetime import datetime
 from app.database import get_db
 from app.models import Ticket, User, TenantUserPermission, TicketMessage
 from app.routers.auth import get_current_user
+from app.services.graph_email import send_graph_email
 import uuid
 
 router = APIRouter(prefix="/api/v1/tickets", tags=["tickets"])
@@ -67,7 +68,7 @@ def get_accessible_tenant_ids(user: User, db: Session) -> List[str]:
         return [t.id for t in db.query(Tenant).filter_by(is_active=True).all()]
     if user.role == "client":
         return [user.tenant_id]
-    # technician y supervisor ù solo tenants asignados explicitamente
+    # technician y supervisor ¬ù solo tenants asignados explicitamente
     perms = db.query(TenantUserPermission).filter(
         TenantUserPermission.user_id == user.id
     ).all()
@@ -92,15 +93,26 @@ def enrich_ticket(ticket: Ticket, db: Session) -> dict:
         data["merged_into_ticket_number"] = None
     return data
 
+from sqlalchemy import text
+
 def generate_ticket_number(db: Session) -> str:
-    count = db.query(Ticket).count()
-    return f"TKT-{str(count + 1).zfill(6)}"
+    try:
+        db.execute(text("CREATE SEQUENCE IF NOT EXISTS ticket_number_seq START 1"))
+        db.commit()
+        next_val = db.execute(text("SELECT nextval('ticket_number_seq')")).scalar()
+        return f"TKT-{str(next_val).zfill(6)}"
+    except Exception:
+        # Fallback si no es postgresql o hay error
+        db.rollback()
+        count = db.query(Ticket).count()
+        return f"TKT-{str(count + 1).zfill(6)}"
 
 # -- Endpoints -------------------------------------------------
 
 @router.post("", status_code=201, response_model=TicketResponse)
 def create_ticket(
     req: TicketCreate,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -122,6 +134,10 @@ def create_ticket(
         db.add(ticket)
         db.commit()
         db.refresh(ticket)
+        
+        email_body = f"<p>Hola {current_user.full_name},</p><p>Tu ticket <b>{ticket.ticket_number}</b> ha sido creado exitosamente.</p>"
+        background_tasks.add_task(send_graph_email, current_user.email, f"Nuevo Ticket: {ticket.title}", email_body, ticket.ticket_number, False)
+        
         return enrich_ticket(ticket, db)
     except Exception as e:
         db.rollback()
@@ -210,7 +226,7 @@ def assign_ticket(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    # Solo admin y superadmin pueden asignar ù supervisor NO
+    # Solo admin y superadmin pueden asignar ¬ù supervisor NO
     if current_user.role not in GLOBAL_ROLES | {"technician"}:
         raise HTTPException(403, "Sin permisos para asignar tickets")
 

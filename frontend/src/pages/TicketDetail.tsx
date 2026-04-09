@@ -351,7 +351,17 @@ export default function TicketDetail() {
                     void sendMessage();
                   }
                 }}
-                placeholder={isInternal ? "Nota interna..." : "Escribe... (Enter envia)"}
+                onPaste={(e) => {
+                  if (e.clipboardData.files.length > 0) {
+                    e.preventDefault();
+                    const pastedFiles = Array.from(e.clipboardData.files);
+                    const filesWithName = pastedFiles.map((f, i) => {
+                        return new File([f], `screenshot_${Date.now()}_${i}.${f.type.split('/')[1] || 'png'}`, { type: f.type });
+                    });
+                    setSelectedFiles(prev => [...prev, ...filesWithName]);
+                  }
+                }}
+                placeholder={isInternal ? "Nota interna..." : "Escribe... (Pega imagenes con Ctrl+V)"}
                 disabled={isMergedOrigin}
                 style={{ flex: 1, background: "transparent", border: "none", outline: "none", resize: "none", fontSize: "13px", color: "#374151", minHeight: "32px", maxHeight: "100px", fontFamily: "inherit", lineHeight: "1.4" }}
                 rows={1}
@@ -364,7 +374,12 @@ export default function TicketDetail() {
                     multiple
                     disabled={isMergedOrigin}
                     style={{ display: "none" }}
-                    onChange={(e) => setSelectedFiles(Array.from(e.target.files || []))}
+                    onChange={(e) => {
+                      if (e.target.files) {
+                        setSelectedFiles(prev => [...prev, ...Array.from(e.target.files || [])]);
+                      }
+                      e.target.value = '';
+                    }}
                   />
                 </label>
                 <button disabled={isMergedOrigin} onClick={() => setIsInternal(!isInternal)} style={{ background: "none", border: "none", cursor: "pointer", color: isInternal ? "#f59e0b" : "#94a3b8", padding: "3px" }}>
@@ -380,9 +395,22 @@ export default function TicketDetail() {
               </div>
             </div>
             {selectedFiles.length > 0 && (
-              <p style={{ margin: "6px 0 0", fontSize: "11px", color: "#64748b" }}>
-                {selectedFiles.length} archivo(s) seleccionado(s)
-              </p>
+              <div style={{ margin: "10px 0 0", display: "flex", gap: "6px", flexWrap: "wrap" }}>
+                {selectedFiles.map((f, idx) => (
+                  <div key={idx} style={{ display: "flex", alignItems: "center", gap: "6px", padding: "4px 8px", background: "#e0e7ff", border: "1px solid #c7d2fe", borderRadius: "6px" }}>
+                    <span style={{ fontSize: "11px", color: "#4338ca", maxWidth: "150px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {f.name}
+                    </span>
+                    <button
+                      onClick={() => setSelectedFiles(prev => prev.filter((_, i) => i !== idx))}
+                      style={{ background: "none", border: "none", padding: 0, cursor: "pointer", color: "#818cf8", fontSize: "12px", fontWeight: "bold", display: "flex", alignItems: "center" }}
+                      title="Quitar"
+                    >
+                      x
+                    </button>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         </div>

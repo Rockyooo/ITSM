@@ -1,0 +1,41 @@
+name: ITSM CI/CD
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  backend-checks:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    - name: Install dependencies
+      run: |
+        cd backend
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install flake8
+    - name: Run Linting
+      run: |
+        cd backend
+        flake8 app/ --count --select=E9,F63,F7,F82 --show-source --statistics
+
+  frontend-checks:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Setup Node
+      uses: actions/setup-node@v3
+      with:
+        node-version: '20'
+    - name: Install and Build
+      run: |
+        cd frontend
+        npm ci
+        npm run build
