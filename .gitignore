@@ -8,3 +8,8 @@ build/
 .vite/
 venv/
 .venv/
+
+*.bak
+files.zip
+files/
+*.png.png

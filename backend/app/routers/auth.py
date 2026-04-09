@@ -11,7 +11,9 @@ import os, uuid
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 
-SECRET_KEY = os.getenv("SECRET_KEY", "changeme")
+SECRET_KEY = os.getenv("SECRET_KEY")
+if not SECRET_KEY:
+    raise RuntimeError("SECRET_KEY no esta definida. Configura la variable de entorno.")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
