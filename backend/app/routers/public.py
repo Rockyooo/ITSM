@@ -6,6 +6,7 @@ from datetime import datetime
 from app.database import get_db
 from app.models import User, Ticket, Tenant
 import uuid
+from app.routers.tickets import generate_ticket_number
 
 router = APIRouter(prefix="/api/v1/public", tags=["public"])
 
@@ -27,9 +28,7 @@ class PublicTicketResponse(BaseModel):
     class Config:
         from_attributes = True
 
-def get_next_ticket_number(db: Session) -> str:
-    count = db.query(Ticket).count()
-    return f"TKT-{str(count + 1).zfill(6)}"
+
 
 def resolve_tenant_by_email(email: str, db: Session) -> Optional[Tenant]:
     domain = email.split("@")[-1]
@@ -68,7 +67,7 @@ def create_public_ticket(payload: PublicTicketCreate, db: Session = Depends(get_
 
     ticket = Ticket(
         id=str(uuid.uuid4()),
-        ticket_number=get_next_ticket_number(db),
+        ticket_number=generate_ticket_number(db),
         tenant_id=tenant.id,
         requester_id=user.id,
         title=title,
