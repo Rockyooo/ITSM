@@ -123,7 +123,7 @@ export default function TicketsPage() {
     setMessages(data);
   };
 
-  const selectTicket = (t: any) => { setSelected(t); loadMessages(t.id); };
+  const selectTicket = (t: any) => { navigate('/ticket/' + t.id); };
 
   const createTicket = async (e: React.FormEvent) => {
     e.preventDefault();

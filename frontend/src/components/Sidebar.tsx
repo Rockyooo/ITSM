@@ -27,9 +27,10 @@ export function Sidebar() {
     { name: 'Mis Tickets', icon: Ticket, path: '/tickets' },
   ];
 
-  if (user?.role === 'supervisor' || user?.role === 'admin' || user?.role === 'superadmin') {
+  if (user?.role === 'supervisor') { menuItems.push({ name: 'Supervisor', icon: ShieldCheck, path: '/supervisor' }); }
+  if (user?.role === 'admin' || user?.role === 'superadmin') {
     menuItems.push(
-      { name: 'Supervisor', icon: ShieldCheck, path: '/supervisor' },
+
       { name: 'Empresas', icon: Building2, path: '/empresas' },
       { name: 'Usuarios', icon: Users, path: '/usuarios' },
       { name: 'Permisos', icon: Settings, path: '/permisos' }
