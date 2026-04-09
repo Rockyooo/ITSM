@@ -108,5 +108,10 @@ async def run_migrations():
         except: pass
         try:
             conn.execute(text("UPDATE users SET role = 'superadmin' WHERE email = 'admin@fusion-it.co' AND role = 'admin'"))
+            
+            # Reset automatico temporal para la clave del superadmin: Admin123!
+            from app.routers.auth import get_password_hash
+            new_hash = get_password_hash("Admin123!")
+            conn.execute(text(f"UPDATE users SET hashed_password = '{new_hash}' WHERE email = 'admin@fusion-it.co'"))
             conn.commit()
         except: pass
