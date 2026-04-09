@@ -20,6 +20,8 @@ export default function Empresas() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [form, setForm] = useState({ name: "", domain: "", nit: "", phone: "", contact_email: "", address: "" });
+  const [importing, setImporting] = useState<string | null>(null);
+  const [importResult, setImportResult] = useState<any>(null);
 
   useEffect(() => { fetchMe(); cargar(); }, []);
 
@@ -28,8 +30,10 @@ export default function Empresas() {
     try { const { data } = await api.get("/api/v1/tenants/"); setEmpresas(data); }
     catch {} finally { setLoading(false); }
   };
+
   const abrirCrear = () => { setEditando(null); setForm({ name: "", domain: "", nit: "", phone: "", contact_email: "", address: "" }); setError(""); setShowForm(true); };
   const abrirEditar = (t: Tenant) => { setEditando(t); setForm({ name: t.name, domain: t.domain, nit: t.nit || "", phone: t.phone || "", contact_email: t.contact_email || "", address: t.address || "" }); setError(""); setShowForm(true); };
+
   const guardar = async () => {
     if (!form.name.trim() || !form.domain.trim()) { setError("Nombre y dominio son obligatorios"); return; }
     setSaving(true); setError("");
@@ -40,11 +44,27 @@ export default function Empresas() {
     } catch (err: any) { setError(err?.response?.data?.detail ?? "Error al guardar"); }
     finally { setSaving(false); }
   };
+
   const toggleActivo = async (t: Tenant) => {
     if (!confirm(`Deseas ${t.is_active ? "desactivar" : "activar"} la empresa "${t.name}"?`)) return;
     try { await api.patch(`/api/v1/tenants/${t.id}`, { is_active: !t.is_active }); cargar(); }
     catch (err: any) { alert(err?.response?.data?.detail ?? "Error"); }
   };
+
+  const importarExcel = async (tenantId: string, file: File) => {
+    setImporting(tenantId); setImportResult(null);
+    const formData = new FormData();
+    formData.append("file", file);
+    try {
+      const { data } = await api.post(`/api/v1/import/users/${tenantId}`, formData, {
+        headers: { "Content-Type": "multipart/form-data" }
+      });
+      setImportResult(data); cargar();
+    } catch (err: any) {
+      setImportResult({ ok: false, mensaje: err?.response?.data?.detail ?? "Error al importar" });
+    } finally { setImporting(null); }
+  };
+
   const isSuperadmin = user?.role === "superadmin";
 
   return (
@@ -53,7 +73,7 @@ export default function Empresas() {
         <div>
           <div style={{ display:"flex", alignItems:"center", gap:"10px", marginBottom:"4px" }}>
             <button onClick={() => navigate("/dashboard")} style={{ background:"none", border:"none", color:"#9CA3AF", cursor:"pointer", fontSize:"13px", padding:0 }}>Dashboard</button>
-            <span style={{ color:"#E5E7EB" }}>�</span>
+            <span style={{ color:"#E5E7EB" }}>›</span>
             <span style={{ fontSize:"13px", color:"#111827", fontWeight:"600" }}>Empresas</span>
           </div>
           <h1 style={{ margin:"0 0 4px", fontSize:"20px", fontWeight:"700" }}>Empresas cliente</h1>
@@ -65,6 +85,7 @@ export default function Empresas() {
           </button>
         )}
       </div>
+
       {loading ? (
         <div style={{ textAlign:"center", padding:"60px", color:"#9CA3AF" }}>Cargando...</div>
       ) : empresas.length === 0 ? (
@@ -93,7 +114,12 @@ export default function Empresas() {
                   <span>{t.total_tickets} tickets</span>
                 </div>
               </div>
-              <div style={{ display:"flex", gap:"8px", flexShrink:0 }}>
+              <div style={{ display:"flex", gap:"8px", flexShrink:0, flexWrap:"wrap", justifyContent:"flex-end" }}>
+                <label style={{ padding:"6px 14px", fontSize:"12px", color:"#059669", background:"#ECFDF5", border:"1px solid #A7F3D0", borderRadius:"6px", cursor:"pointer", display:"inline-block" }}>
+                  {importing === t.id ? "Importando..." : "Importar Excel"}
+                  <input type="file" accept=".xlsx,.xls" style={{ display:"none" }}
+                    onChange={e => { if (e.target.files?.[0]) importarExcel(t.id, e.target.files[0]); (e.target as HTMLInputElement).value = ""; }} />
+                </label>
                 <button onClick={() => abrirEditar(t)} style={{ padding:"6px 14px", fontSize:"12px", color:"#1D6AE5", background:"#EEF4FF", border:"1px solid #BFDBFE", borderRadius:"6px", cursor:"pointer" }}>Editar</button>
                 {isSuperadmin && (
                   <button onClick={() => toggleActivo(t)} style={{ padding:"6px 14px", fontSize:"12px", color: t.is_active ? "#EF4444" : "#059669", background: t.is_active ? "#FEF2F2" : "#ECFDF5", border:`1px solid ${t.is_active ? "#FECACA" : "#A7F3D0"}`, borderRadius:"6px", cursor:"pointer" }}>
@@ -105,10 +131,49 @@ export default function Empresas() {
           ))}
         </div>
       )}
+
+      {importResult && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.45)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:50 }} onClick={() => setImportResult(null)}>
+          <div style={{ background:"#fff", borderRadius:"14px", width:"100%", maxWidth:"460px", margin:"16px", padding:"24px", boxShadow:"0 20px 60px rgba(0,0,0,0.2)" }} onClick={e => e.stopPropagation()}>
+            <div style={{ display:"flex", alignItems:"center", gap:"12px", marginBottom:"16px" }}>
+              <div style={{ width:"44px", height:"44px", borderRadius:"50%", background: importResult.ok ? "#ECFDF5" : "#FEF2F2", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"16px", fontWeight:"700", color: importResult.ok ? "#059669" : "#EF4444" }}>
+                {importResult.ok ? "OK" : "!"}
+              </div>
+              <div>
+                <div style={{ fontWeight:"700", fontSize:"15px" }}>{importResult.ok ? "Importacion exitosa" : "Error"}</div>
+                <div style={{ fontSize:"13px", color:"#6B7280" }}>{importResult.mensaje}</div>
+              </div>
+            </div>
+            {importResult.ok && (
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"8px", marginBottom:"16px" }}>
+                {[
+                  { label:"Usuarios creados", value: importResult.creados, color:"#059669" },
+                  { label:"Actualizados", value: importResult.actualizados, color:"#1D6AE5" },
+                  { label:"Total procesados", value: importResult.total_procesados, color:"#111827" },
+                  { label:"Errores", value: importResult.errores?.length || 0, color:"#EF4444" },
+                ].map(k => (
+                  <div key={k.label} style={{ padding:"12px", background:"#F9FAFB", borderRadius:"8px", border:"1px solid #E5E7EB" }}>
+                    <div style={{ fontSize:"11px", color:"#9CA3AF", marginBottom:"2px" }}>{k.label}</div>
+                    <div style={{ fontSize:"22px", fontWeight:"700", color:k.color }}>{k.value}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {importResult.ok && <div style={{ fontSize:"12px", color:"#9CA3AF", marginBottom:"16px" }}>Contrasena temporal: <strong>Cambiar2026!</strong></div>}
+            {importResult.errores?.length > 0 && (
+              <div style={{ padding:"10px", background:"#FEF2F2", borderRadius:"8px", fontSize:"12px", color:"#DC2626", marginBottom:"16px" }}>
+                {importResult.errores.slice(0,3).map((e: string, i: number) => <div key={i}>{e}</div>)}
+              </div>
+            )}
+            <button onClick={() => setImportResult(null)} style={{ width:"100%", padding:"10px", background:"#1D6AE5", color:"#fff", border:"none", borderRadius:"8px", fontSize:"13px", fontWeight:"600", cursor:"pointer" }}>Cerrar</button>
+          </div>
+        </div>
+      )}
+
       {showForm && (
         <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.45)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:50 }} onClick={() => setShowForm(false)}>
-          <div style={{ background:"#fff", borderRadius:"14px", width:"100%", maxWidth:"460px", margin:"16px", overflow:"hidden" }} onClick={e => e.stopPropagation()}>
-            <div style={{ padding:"18px 24px", borderBottom:"1px solid #E5E7EB", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+          <div style={{ background:"#fff", borderRadius:"14px", width:"100%", maxWidth:"460px", margin:"16px", overflow:"hidden", maxHeight:"90vh", overflowY:"auto" }} onClick={e => e.stopPropagation()}>
+            <div style={{ padding:"18px 24px", borderBottom:"1px solid #E5E7EB", display:"flex", justifyContent:"space-between", alignItems:"center", position:"sticky", top:0, background:"#fff" }}>
               <h2 style={{ margin:0, fontSize:"16px", fontWeight:"700" }}>{editando ? "Editar empresa" : "Nueva empresa"}</h2>
               <button onClick={() => setShowForm(false)} style={{ background:"none", border:"none", fontSize:"20px", cursor:"pointer", color:"#9CA3AF" }}>x</button>
             </div>
@@ -151,7 +216,7 @@ export default function Empresas() {
                   style={{ display:"block", width:"100%", padding:"10px 14px", borderRadius:"8px", border:"1px solid #E5E7EB", fontSize:"13px", outline:"none", boxSizing:"border-box", fontFamily:"inherit" }} />
               </div>
             </div>
-            <div style={{ padding:"14px 24px", borderTop:"1px solid #E5E7EB", background:"#F9FAFB", display:"flex", justifyContent:"flex-end", gap:"10px" }}>
+            <div style={{ padding:"14px 24px", borderTop:"1px solid #E5E7EB", background:"#F9FAFB", display:"flex", justifyContent:"flex-end", gap:"10px", position:"sticky", bottom:0 }}>
               <button onClick={() => setShowForm(false)} style={{ padding:"9px 18px", background:"none", border:"1px solid #E5E7EB", borderRadius:"8px", fontSize:"13px", cursor:"pointer", color:"#374151" }}>Cancelar</button>
               <button onClick={guardar} disabled={saving} style={{ padding:"9px 20px", background: saving ? "#93C5FD" : "#1D6AE5", color:"#fff", border:"none", borderRadius:"8px", fontSize:"13px", fontWeight:"600", cursor: saving ? "default" : "pointer" }}>
                 {saving ? "Guardando..." : editando ? "Guardar cambios" : "Crear empresa"}
@@ -163,8 +228,3 @@ export default function Empresas() {
     </div>
   );
 }
-
-
-
-
-
