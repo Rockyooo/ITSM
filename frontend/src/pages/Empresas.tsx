@@ -53,7 +53,7 @@ export default function Empresas() {
         <div>
           <div style={{ display:"flex", alignItems:"center", gap:"10px", marginBottom:"4px" }}>
             <button onClick={() => navigate("/dashboard")} style={{ background:"none", border:"none", color:"#9CA3AF", cursor:"pointer", fontSize:"13px", padding:0 }}>Dashboard</button>
-            <span style={{ color:"#E5E7EB" }}>›</span>
+            <span style={{ color:"#E5E7EB" }}>ï¿½</span>
             <span style={{ fontSize:"13px", color:"#111827", fontWeight:"600" }}>Empresas</span>
           </div>
           <h1 style={{ margin:"0 0 4px", fontSize:"20px", fontWeight:"700" }}>Empresas cliente</h1>

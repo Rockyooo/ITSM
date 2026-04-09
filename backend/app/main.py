@@ -1,7 +1,7 @@
-from fastapi import FastAPI
+﻿from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from app.routers import auth, tickets, messages, attachments, users, public, permissions, tenants
+from app.routers import auth, tickets, messages, attachments, users, public, permissions, tenants, import_users
 import os, pathlib
 
 app = FastAPI(title="ITSM Fusion I.T.", version="1.0.0")
@@ -26,6 +26,7 @@ app.include_router(users.router)
 app.include_router(public.router)
 app.include_router(permissions.router)
 app.include_router(tenants.router)
+app.include_router(import_users.router)
 
 @app.on_event("startup")
 async def run_migrations():
@@ -81,6 +82,7 @@ async def run_migrations():
 @app.get("/health")
 async def health():
     return {"status": "ok", "service": "ITSM Fusion I.T.", "version": "1.0.0"}
+
 
 
 
