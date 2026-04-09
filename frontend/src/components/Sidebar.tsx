@@ -5,6 +5,7 @@ import {
   LogOut, Bell, ShieldCheck, ChevronLeft, Zap
 } from 'lucide-react';
 import { useAuthStore } from '../store/auth';
+import type { LucideIcon } from 'lucide-react';
 
 export function Sidebar() {
   const { user, logout } = useAuthStore();
@@ -22,15 +23,19 @@ export function Sidebar() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const menuItems = [
-    { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
-    { name: 'Mis Tickets', icon: Ticket, path: '/tickets' },
-  ];
+  const menuItems: Array<{ name: string; icon: LucideIcon; path: string }> = [];
 
-  if (user?.role === 'supervisor') { menuItems.push({ name: 'Supervisor', icon: ShieldCheck, path: '/supervisor' }); }
+  if (user?.role === 'supervisor') {
+    menuItems.push({ name: 'Supervisor', icon: ShieldCheck, path: '/supervisor' });
+  } else {
+    menuItems.push(
+      { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
+      { name: 'Mis Tickets', icon: Ticket, path: '/tickets' }
+    );
+  }
+
   if (user?.role === 'admin' || user?.role === 'superadmin') {
     menuItems.push(
-
       { name: 'Empresas', icon: Building2, path: '/empresas' },
       { name: 'Usuarios', icon: Users, path: '/usuarios' },
       { name: 'Permisos', icon: Settings, path: '/permisos' }

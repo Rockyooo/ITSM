@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { useAuthStore } from "../store/auth";
 
 // ---------------------------------------------
@@ -73,11 +73,11 @@ export default function Login() {
         className="left-panel">
         <div style={{ maxWidth:"320px" }}>
           <div style={{ fontSize:"32px", fontWeight:"800", color:"#F1F5F9", marginBottom:"16px", lineHeight:"1.2" }}>
-            Soporte TI<br />
-            <span style={{ color: BRANDING.primaryColor }}>simplificado.</span>
+            Gestión TI<br />
+            <span style={{ color: BRANDING.primaryColor }}>que trabaja para ti.</span>
           </div>
           <p style={{ color:"#94A3B8", fontSize:"15px", lineHeight:"1.7" }}>
-            Gestiona tickets, inventario y equipos desde un solo lugar. Disenhado para empresas que necesitan mas que GLPI.
+            Desde la incidencia hasta la solución, todo en un solo lugar.
           </p>
         </div>
       </div>

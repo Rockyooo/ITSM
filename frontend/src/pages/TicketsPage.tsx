@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
 import { useAuthStore } from "../store/auth";
 import AssignTechnicianModal from "./AssignTechnicianModal";
@@ -80,6 +81,7 @@ function PriorityDot({ priority }: { priority: string }) {
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function TicketsPage() {
   const { user, fetchMe } = useAuthStore();
+  const navigate = useNavigate();
   const [tickets, setTickets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<any>(null);
