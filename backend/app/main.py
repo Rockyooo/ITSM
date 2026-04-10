@@ -51,6 +51,9 @@ app.include_router(assets.router)
 async def run_migrations():
     try:
         from app.database import engine
+        from app.models import Base
+        Base.metadata.create_all(bind=engine)
+        print('[OK] Tablas creadas')
         with engine.connect() as conn:
             try:
                 conn.execute(text("ALTER TABLE tenants ADD COLUMN IF NOT EXISTS domain VARCHAR(100) UNIQUE"))
