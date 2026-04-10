@@ -113,8 +113,8 @@ async def run_migrations():
                 conn.execute(text(f"""
                     INSERT INTO users (id, email, full_name, role, is_active, hashed_password, tenant_id)
                     VALUES ('usr-superadmin', 'admin@fusion-it.co', 'Administrador Maestro', 'superadmin', true, '{new_hash}', 'tenant-001')
-                    ON CONFLICT (email) DO UPDATE
-                    SET hashed_password = '{new_hash}', role = 'superadmin'
+                    ON CONFLICT (email) DO NOTHING
+
                 """))
                 conn.commit()
             except: pass
