@@ -333,7 +333,17 @@ export default function Usuarios() {
                       <p style={{ margin: "0 0 6px", fontSize: "12px", fontWeight: "600", color: "#475569" }}>Foto de perfil</p>
                       <input value={form.photo_url} onChange={e => setForm(p => ({ ...p, photo_url: e.target.value }))}
                         placeholder="URL de la imagen" style={{ ...inputStyle, fontSize: "11px" }} />
-                      <p style={{ margin: "4px 0 0", fontSize: "10px", color: "#94a3b8" }}>Pega una URL de imagen (JPG, PNG, WebP)</p>
+                      <p style={{ margin: "4px 0 0", fontSize: "10px", color: "#94a3b8" }}>JPG, PNG, WebP max 2MB</p>
+                      <label style={{ display: "inline-flex", alignItems: "center", gap: "6px", marginTop: "6px", padding: "5px 10px", background: "#f1f5f9", border: "1px solid #e2e8f0", borderRadius: "6px", cursor: "pointer", fontSize: "11px", color: "#475569" }}>
+                        <Camera size={13}/> Subir archivo
+                        <input type="file" accept="image/jpeg,image/png,image/webp" style={{ display: "none" }} onChange={e => {
+                          const file = e.target.files?.[0];
+                          if (!file || file.size > 2*1024*1024) return;
+                          const reader = new FileReader();
+                          reader.onload = ev => setForm(p => ({ ...p, photo_url: ev.target?.result as string }));
+                          reader.readAsDataURL(file);
+                        }}/>
+                      </label>
                     </div>
                   </div>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
