@@ -95,9 +95,9 @@ export default function Permisos() {
         <div style={{ textAlign:"center", padding:"40px", color:"#9CA3AF" }}>Cargando...</div>
       ) : permisos.length === 0 ? (
         <div style={{ textAlign:"center", padding:"60px", background:"#F9FAFB", borderRadius:"12px", border:"1px dashed #E5E7EB" }}>
-          <div style={{ fontSize:"32px", marginBottom:"8px" }}>??</div>
-          <p style={{ color:"#6B7280", fontSize:"14px", margin:0 }}>Sin permisos asignados aun</p>
-          <p style={{ color:"#9CA3AF", fontSize:"12px", margin:"4px 0 0" }}>Usa el boton para asignar acceso a un tecnico o supervisor</p>
+          <div style={{ fontSize:"32px", marginBottom:"8px" }}>🔒</div>
+          <p style={{ color:"#6B7280", fontSize:"14px", margin:0 }}>Sin permisos asignados aún</p>
+          <p style={{ color:"#9CA3AF", fontSize:"12px", margin:"4px 0 0" }}>Usa el botón para asignar acceso a un técnico o supervisor</p>
         </div>
       ) : (
         <div style={{ display:"flex", flexDirection:"column", gap:"8px" }}>

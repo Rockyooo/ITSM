@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { api } from "../lib/api";
+import { X } from "lucide-react";
 
 interface Technician {
   id: number;
@@ -31,7 +32,7 @@ export default function AssignTechnicianModal({
     setLoading(true);
     api.get("/api/v1/users/technicians")
       .then((res) => { setTechnicians(res.data); setError(null); })
-      .catch(() => setError("No se pudo cargar la lista de técnicos"))
+      .catch(() => setError("No se pudo cargar la lista de tÃ©cnicos"))
       .finally(() => setLoading(false));
   }, [isOpen]);
 
@@ -44,7 +45,7 @@ export default function AssignTechnicianModal({
       onAssigned(selectedId, tech?.full_name ?? "");
       onClose();
     } catch (err: any) {
-      setError(err?.response?.data?.detail ?? "Error al asignar técnico");
+      setError(err?.response?.data?.detail ?? "Error al asignar tÃ©cnico");
     } finally {
       setSaving(false);
     }
@@ -59,21 +60,23 @@ export default function AssignTechnicianModal({
         {/* Header */}
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"16px 24px", borderBottom:"1px solid #E5E7EB", background:"#F9FAFB" }}>
           <div>
-            <div style={{ fontWeight:600, fontSize:"16px", color:"#111827" }}>Asignar Técnico</div>
+            <div style={{ fontWeight:600, fontSize:"16px", color:"#111827" }}>Asignar TÃ©cnico</div>
             <div style={{ fontSize:"12px", color:"#6B7280" }}>{ticketNumber}</div>
           </div>
-          <button onClick={onClose} style={{ background:"none", border:"none", fontSize:"20px", cursor:"pointer", color:"#9CA3AF" }}>×</button>
+          <button onClick={onClose} style={{ background:"none", border:"none", cursor:"pointer", color:"#9CA3AF", display:"flex", alignItems:"center" }}>
+            <X size={18} />
+          </button>
         </div>
 
         {/* Body */}
         <div style={{ padding:"20px 24px" }}>
           {error && <div style={{ marginBottom:"12px", padding:"10px 14px", background:"#FEF2F2", border:"1px solid #FECACA", borderRadius:"8px", fontSize:"13px", color:"#DC2626" }}>{error}</div>}
           {loading ? (
-            <div style={{ textAlign:"center", padding:"32px 0", color:"#9CA3AF" }}>Cargando técnicos...</div>
+            <div style={{ textAlign:"center", padding:"32px 0", color:"#9CA3AF" }}>Cargando tÃ©cnicos...</div>
           ) : (
             <div style={{ display:"flex", flexDirection:"column", gap:"8px", maxHeight:"256px", overflowY:"auto" }}>
               {technicians.length === 0 ? (
-                <div style={{ textAlign:"center", padding:"32px 0", color:"#9CA3AF", fontSize:"13px" }}>No hay técnicos disponibles</div>
+                <div style={{ textAlign:"center", padding:"32px 0", color:"#9CA3AF", fontSize:"13px" }}>No hay tÃ©cnicos disponibles</div>
               ) : technicians.map((tech) => (
                 <label key={tech.id} style={{ display:"flex", alignItems:"center", gap:"12px", padding:"10px 12px", borderRadius:"8px", border: selectedId === tech.id ? "1.5px solid #2563EB" : "1px solid #E5E7EB", background: selectedId === tech.id ? "#EFF6FF" : "#fff", cursor:"pointer" }}>
                   <input type="radio" name="technician" checked={selectedId === tech.id} onChange={() => setSelectedId(tech.id)} style={{ accentColor:"#2563EB" }} />
@@ -103,4 +106,3 @@ export default function AssignTechnicianModal({
     </div>
   );
 }
-

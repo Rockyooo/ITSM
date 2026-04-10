@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Request
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr
 from typing import Optional
 from datetime import datetime
 from app.database import get_db, SessionLocal
 from app.models import User, Ticket, Tenant, TicketMessage
+from app.limiter import limiter
 import uuid
 from app.routers.tickets import generate_ticket_number
 
@@ -17,7 +18,7 @@ def add_internal_alert_task(ticket_id: str, email: str):
             id=str(uuid.uuid4()),
             ticket_id=ticket_id,
             author_id=None,
-            body=f"⚠️ ATENCIÓN: El usuario {email} es nuevo y fue auto-registrado. Favor validar y completar su perfil en la empresa correspondiente.",
+            body=f"ATENCION: El usuario {email} es nuevo y fue auto-registrado. Favor validar y completar su perfil en la empresa correspondiente.",
             message_type="alert",
             is_internal=True,
             is_alert=True
@@ -46,7 +47,6 @@ class PublicTicketResponse(BaseModel):
         from_attributes = True
 
 
-
 def resolve_tenant_by_email(email: str, db: Session) -> Optional[Tenant]:
     if "@" not in email:
         return None
@@ -54,13 +54,14 @@ def resolve_tenant_by_email(email: str, db: Session) -> Optional[Tenant]:
     return db.query(Tenant).filter(Tenant.domain == domain).first()
 
 @router.post("/tickets", response_model=PublicTicketResponse, status_code=201)
-def create_public_ticket(payload: PublicTicketCreate, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+@limiter.limit("10/minute")
+def create_public_ticket(request: Request, payload: PublicTicketCreate, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     # Resolver tenant por dominio del correo
     tenant = resolve_tenant_by_email(payload.email, db)
     if not tenant:
         raise HTTPException(
             status_code=400,
-            detail="No se encontró una empresa registrada válida para este dominio de correo"
+            detail="No se encontro una empresa registrada valida para este dominio de correo"
         )
 
     # Buscar o crear usuario guest
@@ -101,22 +102,24 @@ def create_public_ticket(payload: PublicTicketCreate, background_tasks: Backgrou
     db.add(ticket)
     db.commit()
     db.refresh(ticket)
-    
+
     # Detonador en background sin congelar el request
     if is_new_user:
         background_tasks.add_task(add_internal_alert_task, ticket.id, payload.email)
-        
+
     return ticket
 
 @router.get("/tickets/{ticket_number}", response_model=PublicTicketResponse)
-def get_public_ticket(ticket_number: str, db: Session = Depends(get_db)):
+@limiter.limit("30/minute")
+def get_public_ticket(request: Request, ticket_number: str, db: Session = Depends(get_db)):
     ticket = db.query(Ticket).filter(Ticket.ticket_number == ticket_number).first()
     if not ticket:
         raise HTTPException(status_code=404, detail="Ticket no encontrado")
     return ticket
 
 @router.get("/user-info")
-def get_user_info_by_email(email: str, db: Session = Depends(get_db)):
+@limiter.limit("20/minute")
+def get_user_info_by_email(request: Request, email: str, db: Session = Depends(get_db)):
     """Retorna nombre y equipo asignado del usuario para autocompletar el wizard."""
     user = db.query(User).filter(User.email == email).first()
     if not user:

@@ -5,6 +5,9 @@ from sqlalchemy.orm import Session
 from sqlalchemy import text
 from app.routers import auth, tickets, messages, attachments, users, public, permissions, tenants, import_users, assets, sedes
 from app.database import get_db
+from app.limiter import limiter
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 import os, pathlib
 import sentry_sdk
 from dotenv import load_dotenv
@@ -16,12 +19,17 @@ if os.getenv("SENTRY_DSN"):
 
 app = FastAPI(title="ITSM Fusion I.T.", version="1.0.0")
 
+# Rate limiting
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# CORS — orígenes desde env var; métodos y headers restrictivos
 app.add_middleware(
     CORSMiddleware,
     allow_origins=os.getenv("ALLOWED_ORIGINS", "https://itsm-nine.vercel.app,http://localhost:5173").split(","),
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PATCH", "DELETE", "PUT", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "Accept", "X-Requested-With"],
 )
 
 uploads_path = pathlib.Path("/app/uploads")
@@ -118,12 +126,16 @@ async def run_migrations():
             except: pass
             try:
                 from app.routers.auth import hash_password
-                new_hash = hash_password("FusionIT2024!")
-                conn.execute(text(f"""
-                    INSERT INTO users (id, email, full_name, role, is_active, hashed_password, tenant_id)
-                    VALUES ('usr-superadmin-001', 'admin@fusion-it.co', 'Admin Fusion IT', 'superadmin', true, '{new_hash}', 'tenant-001')
-                    ON CONFLICT (email) DO NOTHING
-                """))
+                superadmin_password = os.getenv("SUPERADMIN_PASSWORD", "FusionIT2024!")
+                new_hash = hash_password(superadmin_password)
+                conn.execute(
+                    text("""
+                        INSERT INTO users (id, email, full_name, role, is_active, hashed_password, tenant_id)
+                        VALUES ('usr-superadmin-001', 'admin@fusion-it.co', 'Admin Fusion IT', 'superadmin', true, :hash, 'tenant-001')
+                        ON CONFLICT (email) DO NOTHING
+                    """),
+                    {"hash": new_hash}
+                )
                 conn.commit()
             except: pass
     except Exception as e:

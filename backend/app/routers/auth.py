@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from jose import JWTError, jwt
@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from datetime import datetime, timedelta
 from app.database import get_db
 from app.models import User, Tenant
+from app.limiter import limiter
 import os, uuid
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
@@ -46,11 +47,15 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id = payload.get("sub")
+        token_tenant_id = payload.get("tenant_id")
         if not user_id:
             raise HTTPException(status_code=401, detail="Token invalido")
-        user = db.query(User).filter(User.id == user_id).first()
+        user = db.query(User).filter(User.id == user_id, User.is_active == True).first()
         if not user:
-            raise HTTPException(status_code=401, detail="Usuario no encontrado")
+            raise HTTPException(status_code=401, detail="Usuario no encontrado o inactivo")
+        # Doble verificacion: tenant_id del token debe coincidir con el del usuario
+        if token_tenant_id and user.tenant_id != token_tenant_id and user.role != "superadmin":
+            raise HTTPException(status_code=401, detail="Token no valido para este tenant")
         return user
     except JWTError:
         raise HTTPException(status_code=401, detail="Token invalido")
@@ -72,8 +77,9 @@ def register(req: RegisterRequest, db: Session = Depends(get_db)):
     return {"id": user.id, "email": user.email, "role": user.role}
 
 @router.post("/login", response_model=TokenResponse)
-def login(form: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == form.username).first()
+@limiter.limit("5/minute")
+def login(request: Request, form: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == form.username, User.is_active == True).first()
     if not user or not verify_password(form.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Credenciales incorrectas")
     token = create_token({"sub": user.id, "tenant_id": user.tenant_id, "role": user.role})
@@ -91,6 +97,3 @@ def me(current_user: User = Depends(get_current_user), db: Session = Depends(get
         "tenant_name": tenant.name if tenant else None,
         "tenant_logo": tenant.logo_url if tenant else None,
     }
-
-
-# rebuild
