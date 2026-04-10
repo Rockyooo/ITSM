@@ -130,7 +130,7 @@ export default function Empresas() {
           <div style={{ display:"flex", alignItems:"center", gap:"10px", marginBottom:"6px" }}>
             <button onClick={() => navigate("/dashboard")} style={{ background:"none", border:"none", color:"#9ca3af", cursor:"pointer", fontSize:"13px", padding:0, fontWeight:"600", transition:"color 0.2s" }} onMouseEnter={e=>e.currentTarget.style.color="#1e1b4b"} onMouseLeave={e=>e.currentTarget.style.color="#9ca3af"}>Dashboard</button>
             <span style={{ color:"#e5e7eb" }}>/</span>
-            <span style={{ fontSize:"13px", color:"#1e1b4b", fontWeight:"700", background:"#f5f3ff", padding:"4px 10px", borderRadius:"6px", color:"#6d28d9" }}>Empresas</span>
+            <span style={{ fontSize:"13px", fontWeight:"700", background:"#f5f3ff", padding:"4px 10px", borderRadius:"6px", color:"#6d28d9" }}>Empresas</span>
           </div>
           <h1 style={{ margin:"0 0 6px", fontSize:"26px", fontWeight:"800", letterSpacing:"-0.02em" }}>Cuentas empresariales</h1>
           <p style={{ margin:0, fontSize:"14px", color:"#6b7280" }}>Hay {empresas.length} empresas registradas en la plataforma</p>

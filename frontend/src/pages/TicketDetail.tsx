@@ -7,10 +7,12 @@ import { useAuthStore } from "../store/auth";
 type Ticket = {
   id: string; ticket_number: string; title: string; description?: string;
   status: string; priority: string; ticket_type: string; category?: string;
+  tenant_id?: string;
   assigned_to?: string | null;
   assignee_name?: string; merged_into_id?: string; merged_into_ticket_number?: string;
   merged_at?: string; created_at: string;
 };
+type TicketListItem = { id: string; ticket_number: string; title: string; status: string; merged_into_id?: string | null };
 type Message = {
   id: string; author_id?: string; author_name?: string; body: string;
   message_type?: string; is_internal: boolean; is_alert?: boolean; created_at: string;
@@ -80,6 +82,11 @@ export default function TicketDetail() {
   const [showReactions, setShowReactions] = useState<string | null>(null);
   const [showStickers, setShowStickers]   = useState(false);
   const [hoverMsg, setHoverMsg]       = useState<string | null>(null);
+
+  const [showMergeModal, setShowMergeModal] = useState(false);
+  const [targetTicketId, setTargetTicketId] = useState("");
+  const [mergeableTickets, setMergeableTickets] = useState<TicketListItem[]>([]);
+  const [isMerging, setIsMerging] = useState(false);
 
   const attachmentsByMessage = useMemo(() => {
     return attachments.reduce<Record<string, Attachment[]>>((acc, item) => {
@@ -178,6 +185,47 @@ export default function TicketDetail() {
     setShowAssign(false);
   };
 
+  const openMergeModal = async () => {
+    const current = ticket;
+    if (!current?.tenant_id || !current.id) return;
+    setTargetTicketId("");
+    setShowMergeModal(true);
+    try {
+      const res = await api.get<TicketListItem[]>(`/api/v1/tickets?tenant_id=${current.tenant_id}`);
+      const available = res.data.filter(
+        (row) => row.id !== current.id && row.status !== "closed" && !row.merged_into_id
+      );
+      setMergeableTickets(available);
+    } catch {
+      setMergeableTickets([]);
+    }
+  };
+
+  const closeMergeModal = () => {
+    if (isMerging) return;
+    setShowMergeModal(false);
+    setTargetTicketId("");
+  };
+
+  const handleMerge = async () => {
+    if (!targetTicketId || !id) return;
+    setIsMerging(true);
+    try {
+      const { data } = await api.post<Ticket>(`/api/v1/tickets/${id}/merge`, {
+        target_ticket_id: targetTicketId,
+      });
+      setTicket(data);
+      setShowMergeModal(false);
+      setTargetTicketId("");
+      await refreshMessages(id);
+    } catch (err: unknown) {
+      const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
+      alert(typeof detail === "string" ? detail : "Error al fusionar el ticket.");
+    } finally {
+      setIsMerging(false);
+    }
+  };
+
   if (loading) return (
     <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#94a3b8" }}>
       Cargando...
@@ -201,6 +249,20 @@ export default function TicketDetail() {
         <span style={{ fontSize: "11px", color: "#94a3b8", fontFamily: "monospace" }}>{ticket.ticket_number}</span>
         <span style={{ fontSize: "11px", padding: "2px 8px", borderRadius: "99px", fontWeight: "600", background: sc.bg, color: sc.color }}>{sc.label}</span>
         <span style={{ fontSize: "11px", padding: "2px 8px", borderRadius: "99px", fontWeight: "600", background: `${pc.color}18`, color: pc.color }}>{pc.label}</span>
+        {!isMerged && (
+          <button
+            type="button"
+            onClick={() => void openMergeModal()}
+            title="Fusionar en otro ticket"
+            style={{
+              display: "inline-flex", alignItems: "center", gap: "4px", flexShrink: 0,
+              padding: "4px 10px", fontSize: "11px", fontWeight: "600", cursor: "pointer",
+              background: "#f5f3ff", border: "1px solid #ddd6fe", borderRadius: "8px", color: "#6d28d9",
+            }}
+          >
+            <GitMerge size={12} /> Fusionar
+          </button>
+        )}
         <h1 style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#0f172a", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ticket.title}</h1>
       </div>
 
@@ -534,6 +596,23 @@ export default function TicketDetail() {
             )}
           </div>
 
+          {!isMerged && (
+            <div style={{ background: "#fff", borderRadius: "10px", border: "1px solid #f1f5f9", padding: "12px" }}>
+              <p style={{ margin: "0 0 8px", fontSize: "10px", fontWeight: "700", color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em" }}>Acciones</p>
+              <button
+                type="button"
+                onClick={() => void openMergeModal()}
+                style={{
+                  width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px",
+                  padding: "8px", borderRadius: "8px", border: "1px solid #ddd6fe", background: "#faf5ff",
+                  color: "#6d28d9", fontSize: "12px", fontWeight: "600", cursor: "pointer",
+                }}
+              >
+                <GitMerge size={14} /> Fusionar con otro ticket
+              </button>
+            </div>
+          )}
+
           <div style={{ background: "#fff", borderRadius: "10px", border: "1px solid #f1f5f9", padding: "12px" }}>
             <p style={{ margin: "0 0 8px", fontSize: "10px", fontWeight: "700", color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em" }}>Detalle</p>
             <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
@@ -570,6 +649,65 @@ export default function TicketDetail() {
           </div>
         </div>
       </div>
+
+      {showMergeModal && (
+        <div
+          role="presentation"
+          onClick={closeMergeModal}
+          style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.5)" }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            onClick={(e) => e.stopPropagation()}
+            style={{ background: "#fff", borderRadius: "12px", width: "100%", maxWidth: "440px", padding: "24px", boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }}
+          >
+            <h3 style={{ marginTop: 0, fontSize: "16px", fontWeight: 600 }}>Fusionar ticket</h3>
+            <p style={{ fontSize: "13px", color: "#6B7280", marginBottom: "16px" }}>
+              Selecciona el ticket principal al que deseas fusionar <strong>{ticket.ticket_number}</strong>. Este ticket se cerrará y quedará enlazado al destino.
+            </p>
+            <select
+              value={targetTicketId}
+              onChange={(e) => setTargetTicketId(e.target.value)}
+              style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #E5E7EB", marginBottom: "20px", fontSize: "13px", boxSizing: "border-box" }}
+            >
+              <option value="">Seleccione un ticket destino...</option>
+              {mergeableTickets.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.ticket_number} — {t.title}
+                </option>
+              ))}
+            </select>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
+              <button
+                type="button"
+                onClick={closeMergeModal}
+                disabled={isMerging}
+                style={{ padding: "8px 16px", background: "none", border: "none", cursor: isMerging ? "default" : "pointer", color: "#6B7280", fontSize: "13px" }}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleMerge()}
+                disabled={!targetTicketId || isMerging}
+                style={{
+                  padding: "8px 20px",
+                  background: !targetTicketId || isMerging ? "#93C5FD" : "#1D6AE5",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "8px",
+                  cursor: !targetTicketId || isMerging ? "not-allowed" : "pointer",
+                  fontSize: "13px",
+                  fontWeight: 500,
+                }}
+              >
+                {isMerging ? "Fusionando..." : "Confirmar fusión"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
