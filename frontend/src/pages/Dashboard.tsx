@@ -59,7 +59,7 @@ export default function Dashboard() {
   const location = useLocation();
   const [tenants, setTenants] = useState<any[]>([]);
   const [activeTenant, setActiveTenant] = useState<string>("");
-  const [assignModal, setAssignModal] = useState<{ open: boolean; ticketId: number | null; ticketNumber: string; currentAssigneeId: number | null }>
+  const [assignModal, setAssignModal] = useState<{ open: boolean; ticketId: string | null; ticketNumber: string; currentAssigneeId: string | null }>
     ({ open: false, ticketId: null, ticketNumber: "", currentAssigneeId: null });
 
   useEffect(() => { fetchMe(); cargarTenants(); }, []);
@@ -111,16 +111,16 @@ export default function Dashboard() {
     if (selected?.id === ticketId) setSelected((prev: any) => ({ ...prev, status }));
   };
 
-  const openAssignModal = (ticketId: number, ticketNumber: string, currentAssigneeId?: number | null) => {
+  const openAssignModal = (ticketId: string, ticketNumber: string, currentAssigneeId?: string | null) => {
     setAssignModal({ open: true, ticketId, ticketNumber, currentAssigneeId: currentAssigneeId ?? null });
   };
 
-  const handleAssigned = (technicianId: number, technicianName: string) => {
+  const handleAssigned = (technicianId: string, technicianName: string) => {
     setTickets(prev => prev.map(t =>
-      t.id === assignModal.ticketId ? { ...t, assignee_id: technicianId, assignee_name: technicianName } : t
+      t.id === assignModal.ticketId ? { ...t, assigned_to: technicianId, assignee_name: technicianName } : t
     ));
     if (selected?.id === assignModal.ticketId)
-      setSelected((prev: any) => ({ ...prev, assignee_id: technicianId, assignee_name: technicianName }));
+      setSelected((prev: any) => ({ ...prev, assigned_to: technicianId, assignee_name: technicianName }));
     setAssignModal({ open: false, ticketId: null, ticketNumber: "", currentAssigneeId: null });
   };
 
@@ -317,7 +317,7 @@ export default function Dashboard() {
                     </span>
                     {/* Asignación en header del detalle */}
                     {selected.assignee_name ? (
-                      <button onClick={() => openAssignModal(selected.id, selected.ticket_number, selected.assignee_id)}
+                      <button onClick={() => openAssignModal(selected.id, selected.ticket_number, selected.assigned_to)}
                         style={{ display:"inline-flex", alignItems:"center", gap:"4px", fontSize:"11px", color:"#059669", background:"#ECFDF5", border:"1px solid #A7F3D0", borderRadius:"20px", padding:"2px 10px", cursor:"pointer" }}>
                         👤 {selected.assignee_name} · cambiar
                       </button>

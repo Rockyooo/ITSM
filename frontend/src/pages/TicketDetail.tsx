@@ -7,6 +7,7 @@ import { useAuthStore } from "../store/auth";
 type Ticket = {
   id: string; ticket_number: string; title: string; description?: string;
   status: string; priority: string; ticket_type: string; category?: string;
+  assigned_to?: string | null;
   assignee_name?: string; merged_into_id?: string; merged_into_ticket_number?: string;
   merged_at?: string; created_at: string;
 };
@@ -173,7 +174,7 @@ export default function TicketDetail() {
   const assign = async (techId: string, techName: string) => {
     if (!id) return;
     await api.patch(`/api/v1/tickets/${id}/assign`, { assigned_to: techId });
-    setTicket(prev => prev ? { ...prev, assignee_name: techName } : prev);
+    setTicket(prev => prev ? { ...prev, assigned_to: techId, assignee_name: techName } : prev);
     setShowAssign(false);
   };
 

@@ -95,7 +95,7 @@ export default function TicketsPage() {
   const [form, setForm] = useState({ title: "", description: "", priority: "medium", ticket_type: "incident", category: "" });
   const [tenants, setTenants] = useState<any[]>([]);
   const [activeTenant, setActiveTenant] = useState<string>("");
-  const [assignModal, setAssignModal] = useState<{ open: boolean; ticketId: number | null; ticketNumber: string; currentAssigneeId: number | null }>(
+  const [assignModal, setAssignModal] = useState<{ open: boolean; ticketId: string | null; ticketNumber: string; currentAssigneeId: string | null }>(
     { open: false, ticketId: null, ticketNumber: "", currentAssigneeId: null }
   );
   const [mergeModal, setMergeModal] = useState<{ open: boolean; source: any | null; targetId: string; loading: boolean; error: string }>({
@@ -160,16 +160,16 @@ export default function TicketsPage() {
     if (selected?.id === ticketId) setSelected((prev: any) => ({ ...prev, status }));
   };
 
-  const openAssignModal = (ticketId: number, ticketNumber: string, currentAssigneeId?: number | null) => {
+  const openAssignModal = (ticketId: string, ticketNumber: string, currentAssigneeId?: string | null) => {
     setAssignModal({ open: true, ticketId, ticketNumber, currentAssigneeId: currentAssigneeId ?? null });
   };
 
-  const handleAssigned = (technicianId: number, technicianName: string) => {
+  const handleAssigned = (technicianId: string, technicianName: string) => {
     setTickets(prev => prev.map(t =>
-      t.id === assignModal.ticketId ? { ...t, assignee_id: technicianId, assignee_name: technicianName } : t
+      t.id === assignModal.ticketId ? { ...t, assigned_to: technicianId, assignee_name: technicianName } : t
     ));
     if (selected?.id === assignModal.ticketId)
-      setSelected((prev: any) => ({ ...prev, assignee_id: technicianId, assignee_name: technicianName }));
+      setSelected((prev: any) => ({ ...prev, assigned_to: technicianId, assignee_name: technicianName }));
     setAssignModal({ open: false, ticketId: null, ticketNumber: "", currentAssigneeId: null });
   };
 
@@ -447,7 +447,7 @@ export default function TicketsPage() {
                 <StatusBadge status={selected.status} />
                 <PriorityDot priority={selected.priority} />
                 {selected.assignee_name ? (
-                  <button onClick={() => openAssignModal(selected.id, selected.ticket_number, selected.assignee_id)} style={{
+                  <button onClick={() => openAssignModal(selected.id, selected.ticket_number, selected.assigned_to)} style={{
                     display: "inline-flex", alignItems: "center", gap: "5px", fontSize: "11px",
                     color: "#059669", background: "#ecfdf5", border: "1px solid #a7f3d0",
                     borderRadius: "99px", padding: "3px 10px", cursor: "pointer", fontWeight: "600",

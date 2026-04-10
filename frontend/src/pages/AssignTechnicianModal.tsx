@@ -3,29 +3,33 @@ import { api } from "../lib/api";
 import { X } from "lucide-react";
 
 interface Technician {
-  id: number;
+  id: string;
   full_name: string;
   email: string;
   role: string;
 }
 
 interface Props {
-  ticketId: number;
+  ticketId: string;
   ticketNumber: string;
-  currentAssigneeId?: number | null;
+  currentAssigneeId?: string | null;
   isOpen: boolean;
   onClose: () => void;
-  onAssigned: (technicianId: number, technicianName: string) => void;
+  onAssigned: (technicianId: string, technicianName: string) => void;
 }
 
 export default function AssignTechnicianModal({
   ticketId, ticketNumber, currentAssigneeId, isOpen, onClose, onAssigned,
 }: Props) {
   const [technicians, setTechnicians] = useState<Technician[]>([]);
-  const [selectedId, setSelectedId] = useState<number | null>(currentAssigneeId ?? null);
+  const [selectedId, setSelectedId] = useState<string | null>(currentAssigneeId ?? null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isOpen) setSelectedId(currentAssigneeId ?? null);
+  }, [isOpen, currentAssigneeId]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -40,7 +44,7 @@ export default function AssignTechnicianModal({
     if (!selectedId) return;
     setSaving(true);
     try {
-      await api.patch(`/api/v1/tickets/${ticketId}/assign`, { assignee_id: selectedId });
+      await api.patch(`/api/v1/tickets/${ticketId}/assign`, { assigned_to: selectedId });
       const tech = technicians.find((t) => t.id === selectedId);
       onAssigned(selectedId, tech?.full_name ?? "");
       onClose();
