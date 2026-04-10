@@ -31,6 +31,12 @@ class User(Base):
     role            = Column(String(20), default="client", index=True)
     is_active       = Column(Boolean, default=True, index=True)
     totp_secret     = Column(String(100))
+    last_name       = Column(String(200))
+    cedula          = Column(String(50))
+    phone           = Column(String(50))
+    position        = Column(String(100))
+    photo_url       = Column(String(500))
+    signature       = Column(String(1000))
     created_at      = Column(DateTime, default=now)
 
 class TenantUserPermission(Base):

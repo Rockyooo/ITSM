@@ -13,21 +13,43 @@ router = APIRouter(prefix="/api/v1/users", tags=["users"])
 class UserCreate(BaseModel):
     email: EmailStr
     full_name: str
+    last_name: Optional[str] = None
     password: str
     role: str = "technician"
+    phone: Optional[str] = None
+    position: Optional[str] = None
+    cedula: Optional[str] = None
+    signature: Optional[str] = None
+    photo_url: Optional[str] = None
+    tenant_id: Optional[str] = None
+    is_active: bool = True
 
 class UserUpdate(BaseModel):
     full_name: Optional[str] = None
+    last_name: Optional[str] = None
     role: Optional[str] = None
     is_active: Optional[bool] = None
+    phone: Optional[str] = None
+    position: Optional[str] = None
+    cedula: Optional[str] = None
+    signature: Optional[str] = None
+    photo_url: Optional[str] = None
+    tenant_id: Optional[str] = None
+    password: Optional[str] = None
 
 class UserResponse(BaseModel):
     id: str
     email: str
     full_name: str
+    last_name: Optional[str] = None
     role: str
     is_active: bool
     tenant_id: str
+    phone: Optional[str] = None
+    position: Optional[str] = None
+    cedula: Optional[str] = None
+    signature: Optional[str] = None
+    photo_url: Optional[str] = None
     created_at: datetime
     class Config:
         from_attributes = True
@@ -76,14 +98,21 @@ def create_user(
         raise HTTPException(status_code=403, detail="Solo administradores pueden crear usuarios")
     if db.query(User).filter(User.email == payload.email).first():
         raise HTTPException(status_code=400, detail="El email ya esta registrado")
+    tenant_id = payload.tenant_id if (current_user.role == "superadmin" and payload.tenant_id) else current_user.tenant_id
     new_user = User(
         id=str(uuid.uuid4()),
         email=payload.email,
         full_name=payload.full_name,
+        last_name=payload.last_name,
         hashed_password=hash_password(payload.password),
         role=payload.role,
-        tenant_id=current_user.tenant_id,
-        is_active=True,
+        tenant_id=tenant_id,
+        phone=payload.phone,
+        position=payload.position,
+        cedula=payload.cedula,
+        signature=payload.signature,
+        photo_url=payload.photo_url,
+        is_active=payload.is_active,
     )
     db.add(new_user)
     db.commit()
@@ -102,11 +131,19 @@ def update_user(
     if current_user.role != "admin" and current_user.id != user_id:
         raise HTTPException(status_code=403, detail="Sin permisos")
     if payload.full_name is not None: user.full_name = payload.full_name
+    if payload.last_name is not None: user.last_name = payload.last_name
+    if payload.phone is not None: user.phone = payload.phone
+    if payload.position is not None: user.position = payload.position
+    if payload.cedula is not None: user.cedula = payload.cedula
+    if payload.signature is not None: user.signature = payload.signature
+    if payload.photo_url is not None: user.photo_url = payload.photo_url
+    if payload.password is not None and payload.password.strip(): user.hashed_password = hash_password(payload.password)
+    if payload.tenant_id is not None and current_user.role == "superadmin": user.tenant_id = payload.tenant_id
     if payload.role is not None:
-        if current_user.role != "admin": raise HTTPException(status_code=403, detail="Solo admins pueden cambiar roles")
+        if current_user.role not in ("admin", "superadmin"): raise HTTPException(status_code=403, detail="Solo admins pueden cambiar roles")
         user.role = payload.role
     if payload.is_active is not None:
-        if current_user.role != "admin": raise HTTPException(status_code=403, detail="Solo admins pueden activar/desactivar")
+        if current_user.role not in ("admin", "superadmin"): raise HTTPException(status_code=403, detail="Solo admins pueden activar/desactivar")
         user.is_active = payload.is_active
     db.commit()
     db.refresh(user)
