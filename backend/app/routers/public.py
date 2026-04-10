@@ -1,14 +1,31 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr
 from typing import Optional
 from datetime import datetime
-from app.database import get_db
-from app.models import User, Ticket, Tenant
+from app.database import get_db, SessionLocal
+from app.models import User, Ticket, Tenant, TicketMessage
 import uuid
 from app.routers.tickets import generate_ticket_number
 
 router = APIRouter(prefix="/api/v1/public", tags=["public"])
+
+def add_internal_alert_task(ticket_id: str, email: str):
+    db = SessionLocal()
+    try:
+        msg = TicketMessage(
+            id=str(uuid.uuid4()),
+            ticket_id=ticket_id,
+            author_id=None,
+            body=f"⚠️ ATENCIÓN: El usuario {email} es nuevo y fue auto-registrado. Favor validar y completar su perfil en la empresa correspondiente.",
+            message_type="alert",
+            is_internal=True,
+            is_alert=True
+        )
+        db.add(msg)
+        db.commit()
+    finally:
+        db.close()
 
 class PublicTicketCreate(BaseModel):
     full_name: str
@@ -31,22 +48,26 @@ class PublicTicketResponse(BaseModel):
 
 
 def resolve_tenant_by_email(email: str, db: Session) -> Optional[Tenant]:
-    domain = email.split("@")[-1]
+    if "@" not in email:
+        return None
+    domain = email.split("@")[-1].lower().strip()
     return db.query(Tenant).filter(Tenant.domain == domain).first()
 
 @router.post("/tickets", response_model=PublicTicketResponse, status_code=201)
-def create_public_ticket(payload: PublicTicketCreate, db: Session = Depends(get_db)):
+def create_public_ticket(payload: PublicTicketCreate, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     # Resolver tenant por dominio del correo
     tenant = resolve_tenant_by_email(payload.email, db)
     if not tenant:
         raise HTTPException(
             status_code=400,
-            detail="No se encontro una empresa registrada para este dominio de correo"
+            detail="No se encontró una empresa registrada válida para este dominio de correo"
         )
 
     # Buscar o crear usuario guest
     user = db.query(User).filter(User.email == payload.email).first()
+    is_new_user = False
     if not user:
+        is_new_user = True
         user = User(
             id=str(uuid.uuid4()),
             email=payload.email,
@@ -80,6 +101,11 @@ def create_public_ticket(payload: PublicTicketCreate, db: Session = Depends(get_
     db.add(ticket)
     db.commit()
     db.refresh(ticket)
+    
+    # Detonador en background sin congelar el request
+    if is_new_user:
+        background_tasks.add_task(add_internal_alert_task, ticket.id, payload.email)
+        
     return ticket
 
 @router.get("/tickets/{ticket_number}", response_model=PublicTicketResponse)

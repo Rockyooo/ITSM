@@ -23,12 +23,25 @@ export default function Inventario() {
   const [error, setError] = useState("");
   const [form, setForm] = useState({ name: "", asset_type: "Hardware", serial_number: "", assigned_to: "", status: "active" });
 
-  useEffect(() => { fetchMe(); cargar(); }, []);
+  const [tenants, setTenants] = useState<any[]>([]);
+  const [activeTenant, setActiveTenant] = useState<string>("");
+
+  useEffect(() => { fetchMe(); cargarTenants(); }, []);
+  useEffect(() => { if (activeTenant !== undefined) cargar(); }, [activeTenant]);
+
+  const cargarTenants = async () => {
+    try {
+      const { data } = await api.get("/api/v1/permissions/my-tenants");
+      setTenants(data);
+      if (data.length > 0 && !activeTenant) setActiveTenant(data[0].tenant_id);
+    } catch {}
+  };
 
   const cargar = async () => {
     setLoading(true);
     try {
-      const { data } = await api.get("/api/v1/assets/");
+      const url = activeTenant ? `/api/v1/assets/?tenant_id=${activeTenant}` : "/api/v1/assets/";
+      const { data } = await api.get(url);
       setAssets(data);
     } catch {} finally {
       setLoading(false);
@@ -62,8 +75,30 @@ export default function Inventario() {
   return (
     <div style={{ display: "flex", backgroundColor: "#F9FAFB", fontFamily: "sans-serif", height: "100%" }}>
       <main style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
-        <div style={{ background:"#fff", borderBottom:"1px solid #E5E7EB", padding:"0 24px", height:"56px", display:"flex", alignItems:"center", justifyContent:"space-between", flexShrink:0 }}>
-          <div><h1 style={{ margin:0, fontSize:"16px", fontWeight:"700" }}>Inventario de Activos</h1><p style={{ margin:0, fontSize:"12px", color:"#9CA3AF" }}>{assets.length} activos registrados</p></div>
+        <div style={{ background:"#fff", borderBottom:"1px solid #E5E7EB", padding:"0 24px", height:"62px", display:"flex", alignItems:"center", justifyContent:"space-between", flexShrink:0 }}>
+          <div>
+            <h1 style={{ margin:0, fontSize:"16px", fontWeight:"700" }}>Inventario de Activos</h1>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "2px" }}>
+              <p style={{ margin:0, fontSize:"12px", color:"#9CA3AF" }}>{assets.length} activos registrados</p>
+              {tenants.length > 1 && (
+                <select 
+                  value={activeTenant} 
+                  onChange={e => setActiveTenant(e.target.value)}
+                  style={{
+                    padding: "2px 6px",
+                    borderRadius: "6px", border: "1px solid #ede9fe",
+                    fontSize: "11px", background: "#f5f3ff", color: "#6d28d9",
+                    outline: "none", cursor: "pointer", fontWeight: "600"
+                  }}
+                >
+                  <option value="">Todas las empresas</option>
+                  {tenants.map((t: any) => (
+                    <option key={t.tenant_id} value={t.tenant_id}>{t.tenant_name}</option>
+                  ))}
+                </select>
+              )}
+            </div>
+          </div>
           {isSuperadmin && <button onClick={abrirCrear} style={{ padding:"8px 16px", background:"#1D6AE5", color:"#fff", border:"none", borderRadius:"8px", cursor:"pointer", fontSize:"13px", fontWeight:"600" }}>+ Nuevo activo</button>}
         </div>
         <div style={{ flex:1, overflowY:"auto", padding:"16px 24px" }}>

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
 import { useAuthStore } from "../store/auth";
@@ -189,18 +189,18 @@ export default function TicketsPage() {
     }
   };
 
-  const filteredByStatus = filterStatus === "all" ? tickets : tickets.filter(t => t.status === filterStatus);
-  const filteredByMerge = filterMerged === "all"
-    ? filteredByStatus
-    : filteredByStatus.filter((t) => (filterMerged === "merged" ? Boolean(t.merged_into_id) : !t.merged_into_id));
-
-  const filtered = filteredByMerge
-    .sort((a, b) => {
+  const filtered = useMemo(() => {
+    let list = filterStatus === "all" ? tickets : tickets.filter(t => t.status === filterStatus);
+    if (filterMerged !== "all") {
+      list = list.filter((t) => (filterMerged === "merged" ? Boolean(t.merged_into_id) : !t.merged_into_id));
+    }
+    return list.sort((a, b) => {
       const pa = PRIORITY_ORDER[a.priority] ?? 99;
       const pb = PRIORITY_ORDER[b.priority] ?? 99;
       if (pa !== pb) return pa - pb;
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
     });
+  }, [tickets, filterStatus, filterMerged]);
 
   const kpis = [
     { label: "Total", value: tickets.length, color: "#6366f1", bg: "#eef2ff", icon: Layers },
@@ -236,9 +236,28 @@ export default function TicketsPage() {
             <h1 style={{ margin: 0, fontSize: "17px", fontWeight: "800", color: "#1e1b4b", letterSpacing: "-0.02em" }}>
               {selected ? selected.title : "Mis Tickets"}
             </h1>
-            <p style={{ margin: 0, fontSize: "11px", color: "#a78bfa" }}>
-              {selected ? selected.ticket_number : `${tickets.length} tickets registrados`}
-            </p>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "2px" }}>
+              <p style={{ margin: 0, fontSize: "11px", color: "#a78bfa" }}>
+                {selected ? selected.ticket_number : `${tickets.length} tickets registrados`}
+              </p>
+              {!selected && tenants.length > 1 && (
+                <select 
+                  value={activeTenant} 
+                  onChange={e => setActiveTenant(e.target.value)}
+                  style={{
+                    padding: "2px 6px",
+                    borderRadius: "6px", border: "1px solid #ede9fe",
+                    fontSize: "11px", background: "#f5f3ff", color: "#6d28d9",
+                    outline: "none", cursor: "pointer", fontWeight: "600"
+                  }}
+                >
+                  <option value="">Todas las empresas</option>
+                  {tenants.map((t: any) => (
+                    <option key={t.tenant_id} value={t.tenant_id}>{t.tenant_name}</option>
+                  ))}
+                </select>
+              )}
+            </div>
           </div>
         </div>
         <button onClick={() => setShowForm(true)} style={{
