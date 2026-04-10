@@ -6,6 +6,7 @@ from datetime import datetime
 from app.database import get_db
 from app.models import Ticket, User, TenantUserPermission, TicketMessage
 from app.routers.auth import get_current_user
+from app.dependencies.tenant_guard import assert_user_can_manage_tickets
 from app.services.graph_email import send_graph_email
 import uuid
 
@@ -77,6 +78,26 @@ def get_accessible_tenant_ids(user: User, db: Session) -> List[str]:
     if user.tenant_id not in tenant_ids:
         tenant_ids.append(user.tenant_id)
     return tenant_ids
+
+def get_ticket_for_management(
+    ticket_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Ticket:
+    """
+    Ticket accesible + usuario con permiso manage_tickets en el tenant del ticket
+    (superadmin/admin/technician o fila tenant_user_permissions con manage_tickets).
+    """
+    accessible = get_accessible_tenant_ids(current_user, db)
+    ticket = db.query(Ticket).filter(
+        Ticket.id == ticket_id,
+        Ticket.tenant_id.in_(accessible),
+    ).first()
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket no encontrado")
+    assert_user_can_manage_tickets(ticket.tenant_id, db, current_user)
+    return ticket
+
 
 def enrich_ticket(ticket: Ticket, db: Session) -> dict:
     """Agrega el nombre del tecnico asignado al ticket."""
@@ -189,22 +210,11 @@ def get_ticket(
 
 @router.patch("/{ticket_id}/status", response_model=TicketResponse)
 def update_status(
-    ticket_id: str,
     req: TicketStatusUpdate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    ticket: Ticket = Depends(get_ticket_for_management),
 ):
-    # supervisor NO puede cambiar estado
-    if current_user.role == "supervisor":
-        raise HTTPException(status_code=403, detail="Supervisores no pueden cambiar el estado del ticket")
-
-    accessible = get_accessible_tenant_ids(current_user, db)
-    ticket = db.query(Ticket).filter(
-        Ticket.id == ticket_id,
-        Ticket.tenant_id.in_(accessible)
-    ).first()
-    if not ticket:
-        raise HTTPException(status_code=404, detail="Ticket no encontrado")
     if req.status not in VALID_STATUSES:
         raise HTTPException(status_code=400, detail=f"Estado invalido. Valores: {VALID_STATUSES}")
     allowed = VALID_TRANSITIONS.get(ticket.status, [])
@@ -234,23 +244,11 @@ def update_status(
 
 @router.patch("/{ticket_id}/assign", response_model=TicketResponse)
 def assign_ticket(
-    ticket_id: str,
     req: TicketAssign,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    ticket: Ticket = Depends(get_ticket_for_management),
 ):
-    # Solo admin y superadmin pueden asignar  supervisor NO
-    if current_user.role not in GLOBAL_ROLES | {"technician"}:
-        raise HTTPException(403, "Sin permisos para asignar tickets")
-
-    accessible = get_accessible_tenant_ids(current_user, db)
-    ticket = db.query(Ticket).filter(
-        Ticket.id == ticket_id,
-        Ticket.tenant_id.in_(accessible)
-    ).first()
-    if not ticket:
-        raise HTTPException(404, "Ticket no encontrado")
-
     tecnico = db.query(User).filter(User.id == req.assigned_to).first()
     if not tecnico:
         raise HTTPException(404, "Tecnico no encontrado")
@@ -294,25 +292,15 @@ def close_ticket(
 
 @router.post("/{ticket_id}/merge", response_model=TicketResponse)
 def merge_ticket(
-    ticket_id: str,
     req: TicketMerge,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    source: Ticket = Depends(get_ticket_for_management),
 ):
-    if current_user.role not in GLOBAL_ROLES | {"technician"}:
-        raise HTTPException(status_code=403, detail="Sin permisos para fusionar tickets")
-
-    if ticket_id == req.target_ticket_id:
+    if source.id == req.target_ticket_id:
         raise HTTPException(status_code=400, detail="No puedes fusionar un ticket consigo mismo")
 
     accessible = get_accessible_tenant_ids(current_user, db)
-    source = db.query(Ticket).filter(
-        Ticket.id == ticket_id,
-        Ticket.tenant_id.in_(accessible)
-    ).first()
-    if not source:
-        raise HTTPException(status_code=404, detail="Ticket origen no encontrado")
-
     target = db.query(Ticket).filter(
         Ticket.id == req.target_ticket_id,
         Ticket.tenant_id.in_(accessible)

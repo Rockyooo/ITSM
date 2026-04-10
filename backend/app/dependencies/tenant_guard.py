@@ -33,6 +33,43 @@ VALID_PERMISSIONS = {
     "post_comments",
 }
 
+# Técnicos conservan gestión de tickets sin fila explícita (compat con API previa)
+_MANAGE_TICKETS_ROLE_BYPASS = {"technician"}
+
+
+def user_has_tenant_permission(
+    permission: str,
+    tenant_id: str,
+    db: Session,
+    current_user: User,
+) -> bool:
+    """True si el usuario puede actuar con `permission` sobre `tenant_id`."""
+    if current_user.role in GLOBAL_ROLES:
+        return True
+    if permission == "manage_tickets" and current_user.role in _MANAGE_TICKETS_ROLE_BYPASS:
+        return True
+    perm_row = db.query(TenantUserPermission).filter(
+        TenantUserPermission.user_id == current_user.id,
+        TenantUserPermission.tenant_id == tenant_id,
+    ).first()
+    return bool(perm_row and permission in (perm_row.permissions or []))
+
+
+def assert_user_can_manage_tickets(
+    tenant_id: str,
+    db: Session,
+    current_user: User,
+) -> None:
+    """
+    Requisito equivalente a require_permission('manage_tickets') cuando el tenant
+    se conoce solo tras cargar el ticket (PATCH assign/status, POST merge).
+    """
+    if not user_has_tenant_permission("manage_tickets", tenant_id, db, current_user):
+        raise HTTPException(
+            status_code=403,
+            detail="Se requiere permiso 'manage_tickets' en esta empresa",
+        )
+
 
 def require_global_admin(current_user: User = Depends(get_current_user)) -> User:
     """Solo superadmin o admin pueden pasar."""
@@ -54,16 +91,10 @@ def require_permission(permission: str):
         db: Session = Depends(get_db),
         current_user: User = Depends(get_current_user),
     ) -> User:
-        if current_user.role in GLOBAL_ROLES:
-            return current_user
-        perm_row = db.query(TenantUserPermission).filter(
-            TenantUserPermission.user_id == current_user.id,
-            TenantUserPermission.tenant_id == tenant_id,
-        ).first()
-        if not perm_row or permission not in (perm_row.permissions or []):
+        if not user_has_tenant_permission(permission, tenant_id, db, current_user):
             raise HTTPException(
                 status_code=403,
-                detail=f"Se requiere permiso '{permission}' en esta empresa"
+                detail=f"Se requiere permiso '{permission}' en esta empresa",
             )
         return current_user
     return _check

@@ -211,6 +211,8 @@ export default function TicketsPage() {
 
   const isMyMessage = (m: any) => m.sender_id === user?.id || (!m.sender_id && true);
 
+  const canManageTickets = user?.role !== "supervisor";
+
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", height: "100vh", background: "#f5f6fa" }}>
@@ -260,17 +262,19 @@ export default function TicketsPage() {
             </div>
           </div>
         </div>
-        <button onClick={() => setShowForm(true)} style={{
-          display: "flex", alignItems: "center", gap: "7px",
-          padding: "9px 18px",
-          background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
-          color: "#fff", border: "none", borderRadius: "10px",
-          cursor: "pointer", fontSize: "13px", fontWeight: "700",
-          boxShadow: "0 4px 12px rgba(99,102,241,0.35)",
-          transition: "all 0.15s",
-        }}>
-          <Plus size={16} strokeWidth={2.5} /> Nuevo ticket
-        </button>
+        {canManageTickets && (
+          <button onClick={() => setShowForm(true)} style={{
+            display: "flex", alignItems: "center", gap: "7px",
+            padding: "9px 18px",
+            background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
+            color: "#fff", border: "none", borderRadius: "10px",
+            cursor: "pointer", fontSize: "13px", fontWeight: "700",
+            boxShadow: "0 4px 12px rgba(99,102,241,0.35)",
+            transition: "all 0.15s",
+          }}>
+            <Plus size={16} strokeWidth={2.5} /> Nuevo ticket
+          </button>
+        )}
       </div>
 
       <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
@@ -400,7 +404,7 @@ export default function TicketsPage() {
                       <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "11px", color: "#059669", fontWeight: "600" }}>
                         <UserCheck size={11} /> {t.assignee_name}
                       </span>
-                    ) : (
+                    ) : canManageTickets ? (
                       <button onClick={e => { e.stopPropagation(); openAssignModal(t.id, t.ticket_number, null); }} style={{
                         fontSize: "11px", color: "#6366f1", background: "#eef2ff",
                         border: "1px solid #c7d2fe", borderRadius: "99px", padding: "1px 8px",
@@ -408,8 +412,10 @@ export default function TicketsPage() {
                       }}>
                         <UserPlus size={10} /> Asignar
                       </button>
+                    ) : (
+                      <span style={{ fontSize: "11px", color: "#9ca3af", fontWeight: "500" }}>Sin asignar</span>
                     )}
-                    {!t.merged_into_id && (
+                    {canManageTickets && !t.merged_into_id && (
                       <button onClick={e => { e.stopPropagation(); openMergeModal(t); }} style={{
                         fontSize: "11px", color: "#7c3aed", background: "#f5f3ff",
                         border: "1px solid #ddd6fe", borderRadius: "99px", padding: "1px 8px",
@@ -447,21 +453,31 @@ export default function TicketsPage() {
                 <StatusBadge status={selected.status} />
                 <PriorityDot priority={selected.priority} />
                 {selected.assignee_name ? (
-                  <button onClick={() => openAssignModal(selected.id, selected.ticket_number, selected.assigned_to)} style={{
-                    display: "inline-flex", alignItems: "center", gap: "5px", fontSize: "11px",
-                    color: "#059669", background: "#ecfdf5", border: "1px solid #a7f3d0",
-                    borderRadius: "99px", padding: "3px 10px", cursor: "pointer", fontWeight: "600",
-                  }}>
-                    <UserCheck size={11} /> {selected.assignee_name} · cambiar
-                  </button>
+                  canManageTickets ? (
+                    <button onClick={() => openAssignModal(selected.id, selected.ticket_number, selected.assigned_to)} style={{
+                      display: "inline-flex", alignItems: "center", gap: "5px", fontSize: "11px",
+                      color: "#059669", background: "#ecfdf5", border: "1px solid #a7f3d0",
+                      borderRadius: "99px", padding: "3px 10px", cursor: "pointer", fontWeight: "600",
+                    }}>
+                      <UserCheck size={11} /> {selected.assignee_name} · cambiar
+                    </button>
+                  ) : (
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", fontSize: "11px", color: "#059669", fontWeight: "600" }}>
+                      <UserCheck size={11} /> {selected.assignee_name}
+                    </span>
+                  )
                 ) : (
-                  <button onClick={() => openAssignModal(selected.id, selected.ticket_number, null)} style={{
-                    display: "inline-flex", alignItems: "center", gap: "5px", fontSize: "11px",
-                    color: "#6366f1", background: "#eef2ff", border: "1px solid #c7d2fe",
-                    borderRadius: "99px", padding: "3px 10px", cursor: "pointer", fontWeight: "600",
-                  }}>
-                    <UserPlus size={11} /> Asignar técnico
-                  </button>
+                  canManageTickets ? (
+                    <button onClick={() => openAssignModal(selected.id, selected.ticket_number, null)} style={{
+                      display: "inline-flex", alignItems: "center", gap: "5px", fontSize: "11px",
+                      color: "#6366f1", background: "#eef2ff", border: "1px solid #c7d2fe",
+                      borderRadius: "99px", padding: "3px 10px", cursor: "pointer", fontWeight: "600",
+                    }}>
+                      <UserPlus size={11} /> Asignar técnico
+                    </button>
+                  ) : (
+                    <span style={{ fontSize: "11px", color: "#9ca3af", fontWeight: "500" }}>Sin asignar</span>
+                  )
                 )}
                 <button onClick={() => setSelected(null)} style={{
                   marginLeft: "auto", background: "none", border: "none",
@@ -477,7 +493,7 @@ export default function TicketsPage() {
               )}
 
               {/* Status change actions */}
-              {NEXT_STATUS[selected.status]?.length > 0 && (
+              {canManageTickets && NEXT_STATUS[selected.status]?.length > 0 && (
                 <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "10px", paddingTop: "10px", borderTop: "1px solid #f3f4f6" }}>
                   <span style={{ fontSize: "11px", color: "#9ca3af", fontWeight: "600" }}>Mover a:</span>
                   {NEXT_STATUS[selected.status].map(s => {
@@ -642,7 +658,7 @@ export default function TicketsPage() {
       </div>
 
       {/* ── Modal: Nuevo Ticket ────────────────────────────────────────────── */}
-      {showForm && (
+      {canManageTickets && showForm && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(15,13,40,0.55)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50, backdropFilter: "blur(4px)" }}>
           <div style={{ background: "#fff", borderRadius: "20px", padding: "28px", width: "520px", maxWidth: "92vw", boxShadow: "0 24px 60px rgba(0,0,0,0.2)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "22px" }}>
@@ -733,7 +749,7 @@ export default function TicketsPage() {
       )}
 
       {/* ── Modal: Asignar Técnico ─────────────────────────────────────────── */}
-      {assignModal.open && assignModal.ticketId && (
+      {canManageTickets && assignModal.open && assignModal.ticketId && (
         <AssignTechnicianModal
           ticketId={assignModal.ticketId}
           ticketNumber={assignModal.ticketNumber}
@@ -745,7 +761,7 @@ export default function TicketsPage() {
       )}
 
       {/* ── Modal: Fusionar Ticket ─────────────────────────────────────────── */}
-      {mergeModal.open && mergeModal.source && (
+      {canManageTickets && mergeModal.open && mergeModal.source && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(15,13,40,0.55)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 60 }}>
           <div style={{ background: "#fff", borderRadius: "16px", padding: "20px", width: "480px", maxWidth: "92vw", boxShadow: "0 24px 60px rgba(0,0,0,0.2)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>

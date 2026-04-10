@@ -63,6 +63,7 @@ export default function TicketDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuthStore();
+  const canManageTickets = user?.role !== "supervisor";
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -249,20 +250,6 @@ export default function TicketDetail() {
         <span style={{ fontSize: "11px", color: "#94a3b8", fontFamily: "monospace" }}>{ticket.ticket_number}</span>
         <span style={{ fontSize: "11px", padding: "2px 8px", borderRadius: "99px", fontWeight: "600", background: sc.bg, color: sc.color }}>{sc.label}</span>
         <span style={{ fontSize: "11px", padding: "2px 8px", borderRadius: "99px", fontWeight: "600", background: `${pc.color}18`, color: pc.color }}>{pc.label}</span>
-        {!isMerged && (
-          <button
-            type="button"
-            onClick={() => void openMergeModal()}
-            title="Fusionar en otro ticket"
-            style={{
-              display: "inline-flex", alignItems: "center", gap: "4px", flexShrink: 0,
-              padding: "4px 10px", fontSize: "11px", fontWeight: "600", cursor: "pointer",
-              background: "#f5f3ff", border: "1px solid #ddd6fe", borderRadius: "8px", color: "#6d28d9",
-            }}
-          >
-            <GitMerge size={12} /> Fusionar
-          </button>
-        )}
         <h1 style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#0f172a", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ticket.title}</h1>
       </div>
 
@@ -270,7 +257,7 @@ export default function TicketDetail() {
         {/* CHAT */}
         <div style={{ display: "flex", flexDirection: "column", overflow: "hidden", borderRight: "1px solid #f1f5f9" }}>
           {/* Cambiar estado */}
-          {NEXT_STATUS[ticket.status]?.length > 0 && !isMerged && (
+          {canManageTickets && NEXT_STATUS[ticket.status]?.length > 0 && !isMerged && (
             <div style={{ padding: "8px 16px", borderBottom: "1px solid #f8fafc", background: "#fff", display: "flex", alignItems: "center", gap: "6px", flexShrink: 0 }}>
               <span style={{ fontSize: "10px", color: "#94a3b8", fontWeight: "700", textTransform: "uppercase" }}>Cambiar:</span>
               {NEXT_STATUS[ticket.status].map(s => (
@@ -553,50 +540,67 @@ export default function TicketDetail() {
         <div style={{ overflowY: "auto", padding: "14px", display: "flex", flexDirection: "column", gap: "10px" }}>
           <div style={{ background: "#fff", borderRadius: "10px", border: "1px solid #f1f5f9", padding: "12px" }}>
             <p style={{ margin: "0 0 8px", fontSize: "10px", fontWeight: "700", color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em" }}>Estado</p>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
-              {Object.entries(STATUS_CONFIG).map(([key, s]) => (
-                <button key={key} onClick={() => changeStatus(key)} disabled={isMerged}
-                  style={{ fontSize: "10px", padding: "3px 9px", borderRadius: "99px", border: "1.5px solid", cursor: "pointer",
-                    background: ticket.status === key ? s.bg : "transparent",
-                    borderColor: ticket.status === key ? s.color : "#e2e8f0",
-                    color: ticket.status === key ? s.color : "#94a3b8",
-                    fontWeight: ticket.status === key ? "700" : "400" }}>
-                  {s.label}
-                </button>
-              ))}
-            </div>
+            {canManageTickets ? (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
+                {Object.entries(STATUS_CONFIG).map(([key, s]) => (
+                  <button key={key} onClick={() => changeStatus(key)} disabled={isMerged}
+                    style={{ fontSize: "10px", padding: "3px 9px", borderRadius: "99px", border: "1.5px solid", cursor: isMerged ? "default" : "pointer",
+                      background: ticket.status === key ? s.bg : "transparent",
+                      borderColor: ticket.status === key ? s.color : "#e2e8f0",
+                      color: ticket.status === key ? s.color : "#94a3b8",
+                      fontWeight: ticket.status === key ? "700" : "400" }}>
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <span style={{ fontSize: "12px", fontWeight: "600", color: sc.color }}>{sc.label}</span>
+            )}
           </div>
 
           <div style={{ background: "#fff", borderRadius: "10px", border: "1px solid #f1f5f9", padding: "12px" }}>
             <p style={{ margin: "0 0 8px", fontSize: "10px", fontWeight: "700", color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em" }}>Asignado a</p>
-            {ticket.assignee_name ? (
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                <div style={{ width: "28px", height: "28px", borderRadius: "50%", background: "#e0e7ff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px", fontWeight: "700", color: "#4338ca" }}>{ticket.assignee_name.charAt(0).toUpperCase()}</div>
-                <div>
-                  <p style={{ margin: 0, fontSize: "12px", fontWeight: "600", color: "#0f172a" }}>{ticket.assignee_name}</p>
-                  <button disabled={isMerged} onClick={() => setShowAssign(!showAssign)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: "10px", color: "#4f46e5", padding: 0 }}>Cambiar</button>
-                </div>
-              </div>
-            ) : (
-              <button disabled={isMerged} onClick={() => setShowAssign(!showAssign)}
-                style={{ width: "100%", padding: "7px", borderRadius: "7px", border: "1.5px dashed #c7d2fe", background: "#f5f3ff", color: "#4f46e5", fontSize: "11px", fontWeight: "600", cursor: "pointer" }}>
-                + Asignar tecnico
-              </button>
-            )}
-            {showAssign && !isMerged && (
-              <div style={{ marginTop: "6px", display: "flex", flexDirection: "column", gap: "3px", maxHeight: "140px", overflowY: "auto" }}>
-                {technicians.map(t => (
-                  <button key={t.id} onClick={() => void assign(t.id, t.full_name)}
-                    style={{ display: "flex", alignItems: "center", gap: "6px", padding: "6px 8px", borderRadius: "7px", border: "1px solid #f1f5f9", background: "#fff", cursor: "pointer", textAlign: "left" }}>
-                    <div style={{ width: "22px", height: "22px", borderRadius: "50%", background: "#e0e7ff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "9px", fontWeight: "700", color: "#4338ca" }}>{t.full_name.charAt(0).toUpperCase()}</div>
-                    <span style={{ fontSize: "12px", color: "#374151" }}>{t.full_name}</span>
+            {canManageTickets ? (
+              <>
+                {ticket.assignee_name ? (
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <div style={{ width: "28px", height: "28px", borderRadius: "50%", background: "#e0e7ff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px", fontWeight: "700", color: "#4338ca" }}>{ticket.assignee_name.charAt(0).toUpperCase()}</div>
+                    <div>
+                      <p style={{ margin: 0, fontSize: "12px", fontWeight: "600", color: "#0f172a" }}>{ticket.assignee_name}</p>
+                      <button disabled={isMerged} onClick={() => setShowAssign(!showAssign)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: "10px", color: "#4f46e5", padding: 0 }}>Cambiar</button>
+                    </div>
+                  </div>
+                ) : (
+                  <button disabled={isMerged} onClick={() => setShowAssign(!showAssign)}
+                    style={{ width: "100%", padding: "7px", borderRadius: "7px", border: "1.5px dashed #c7d2fe", background: "#f5f3ff", color: "#4f46e5", fontSize: "11px", fontWeight: "600", cursor: "pointer" }}>
+                    + Asignar tecnico
                   </button>
-                ))}
-              </div>
+                )}
+                {showAssign && !isMerged && (
+                  <div style={{ marginTop: "6px", display: "flex", flexDirection: "column", gap: "3px", maxHeight: "140px", overflowY: "auto" }}>
+                    {technicians.map(t => (
+                      <button key={t.id} onClick={() => void assign(t.id, t.full_name)}
+                        style={{ display: "flex", alignItems: "center", gap: "6px", padding: "6px 8px", borderRadius: "7px", border: "1px solid #f1f5f9", background: "#fff", cursor: "pointer", textAlign: "left" }}>
+                        <div style={{ width: "22px", height: "22px", borderRadius: "50%", background: "#e0e7ff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "9px", fontWeight: "700", color: "#4338ca" }}>{t.full_name.charAt(0).toUpperCase()}</div>
+                        <span style={{ fontSize: "12px", color: "#374151" }}>{t.full_name}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </>
+            ) : (
+              ticket.assignee_name ? (
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <div style={{ width: "28px", height: "28px", borderRadius: "50%", background: "#e0e7ff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px", fontWeight: "700", color: "#4338ca" }}>{ticket.assignee_name.charAt(0).toUpperCase()}</div>
+                  <p style={{ margin: 0, fontSize: "12px", fontWeight: "600", color: "#0f172a" }}>{ticket.assignee_name}</p>
+                </div>
+              ) : (
+                <span style={{ fontSize: "12px", color: "#94a3b8" }}>Sin asignar</span>
+              )
             )}
           </div>
 
-          {!isMerged && (
+          {canManageTickets && !isMerged && (
             <div style={{ background: "#fff", borderRadius: "10px", border: "1px solid #f1f5f9", padding: "12px" }}>
               <p style={{ margin: "0 0 8px", fontSize: "10px", fontWeight: "700", color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em" }}>Acciones</p>
               <button
