@@ -3,5 +3,7 @@ dockerfilePath = "backend/Dockerfile"
 
 [deploy]
 startCommand = "sh start.sh"
+healthcheckPath = "/health"
+healthcheckTimeout = 60
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 3

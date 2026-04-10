@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 from sqlalchemy import text
-from app.routers import auth, tickets, messages, attachments, users, public, permissions, tenants, import_users, assets, sedes
+from app.routers import auth, tickets, messages, attachments, users, public, permissions, tenants, assets, sedes
 from app.database import get_db
 from app.limiter import limiter
 from slowapi import _rate_limit_exceeded_handler
@@ -23,10 +23,14 @@ app = FastAPI(title="ITSM Fusion I.T.", version="1.0.0")
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-# CORS — orígenes desde env var; métodos y headers restrictivos
+# CORS — orígenes desde env; opcional ALLOWED_ORIGIN_REGEX (p. ej. previews de Vercel)
+_default_origins = "https://itsm-nine.vercel.app,http://localhost:5173"
+_origins = [o.strip() for o in os.getenv("ALLOWED_ORIGINS", _default_origins).split(",") if o.strip()]
+_cors_regex = os.getenv("ALLOWED_ORIGIN_REGEX", "").strip() or None
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=os.getenv("ALLOWED_ORIGINS", "https://itsm-nine.vercel.app,http://localhost:5173").split(","),
+    allow_origins=_origins,
+    allow_origin_regex=_cors_regex,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PATCH", "DELETE", "PUT", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type", "Accept", "X-Requested-With"],
@@ -52,7 +56,6 @@ app.include_router(users.router)
 app.include_router(public.router)
 app.include_router(permissions.router)
 app.include_router(tenants.router)
-app.include_router(import_users.router)
 app.include_router(assets.router)
 app.include_router(sedes.router)
 
