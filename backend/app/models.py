@@ -100,3 +100,14 @@ class Asset(Base):
     assigned_to   = Column(String, ForeignKey("users.id"), index=True)
     status        = Column(String(30), default="active", index=True)
     created_at    = Column(DateTime, default=now)
+class TenantSede(Base):
+    __tablename__ = "tenant_sedes"
+    id         = Column(String, primary_key=True, default=uid)
+    tenant_id  = Column(String, ForeignKey("tenants.id"), nullable=False, index=True)
+    name       = Column(String(200), nullable=False)
+    city       = Column(String(100), nullable=False)
+    address    = Column(String(300))
+    phone      = Column(String(50))
+    is_main    = Column(Boolean, default=False)
+    is_active  = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=now)

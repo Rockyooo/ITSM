@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 from sqlalchemy import text
-from app.routers import auth, tickets, messages, attachments, users, public, permissions, tenants, import_users, assets
+from app.routers import auth, tickets, messages, attachments, users, public, permissions, tenants, import_users, assets, sedes
 from app.database import get_db
 import os, pathlib
 import sentry_sdk
@@ -46,6 +46,7 @@ app.include_router(permissions.router)
 app.include_router(tenants.router)
 app.include_router(import_users.router)
 app.include_router(assets.router)
+app.include_router(sedes.router)
 
 @app.on_event("startup")
 async def run_migrations():
